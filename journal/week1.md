@@ -1,9 +1,12 @@
 # Week 1 — App Containerization
 
+### This week, we focused on containerizing the application using Docker. We created separate Dockerfiles for both the frontend and the backend services, allowing each component of the app to be packaged into its own container. Afterward, we integrated both containers into a single Docker Compose file, which simplifies the process of managing and running both services together in a development or production environment.
+
 ## Homework challenge
 
+
 ***
-## Run the dockerfile as a script
+## Dockerize Backend App
 I firstly created the Dockerfile in the backend-flask directory, here is the code:
 ```Dockerfile
 FROM python:3.10-slim-buster
@@ -58,7 +61,7 @@ the script builds the image then runs it.
 ![image of the script running](assets/docker/script.jpg)
 
 I repeated the same process in the frontend-react-js directory
-
+[Dockerize Backend app](#Dockerize-Backend-App)
 ***
 ## Push an Image to dockerhub
 Prior before now, I had a dockerhub account but I haven't pushed to the hub before.
