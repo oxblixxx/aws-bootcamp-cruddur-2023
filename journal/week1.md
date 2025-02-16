@@ -4,7 +4,7 @@ This week, I focused on containerizing the application using Docker. I created s
 
 ## Homework challenge
 * [Dockerize Backend app](#Dockerize-Backend-App)
-* [Dockerize Backend app](#Dockerize-Frontend-App)
+* [Dockerize Frontend app](#Dockerize-Frontend-App)
 
 
 ***
