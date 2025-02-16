@@ -98,7 +98,7 @@ docker --version
 we are going to be pulling the nginx container from dockerhub
 run the command
 ```
-sudo docker pull nginx
+sudo docker pull nginx -y
 ```
 
 ![docker install image](assets/docker/docker-pull.jpg).
