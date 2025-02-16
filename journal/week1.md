@@ -54,14 +54,21 @@ EXPOSE ${PORT}
 CMD ["npm", "start"]
 ```
 
+>**NB**: Each service has its own Dockerfile located within its respective folder, [frontend-react-js](./frontend-react-js) & [backend-flask](./backend-flask) ensuring that the configurations for the frontend and backend are separate.
+
 ## Upload a Docker image to Docker Hub.
-The built images for both the  **Backend and Frontend** are pushed to [DockerHub](https://hub.docker.com). Upon login via terminal, proceeded to tag the images. 
-```
+The built images for both the  **Backend and Frontend** are pushed to [DockerHub](https://hub.docker.com). Upon login via terminal, proceeded to tag the images. Create a repository for the images and create an **access token** to login.
+
+```sh
+docker login -u <username>
 docker tag backendflask-image:1.0 oxblixxx/backend-flask:1.0
+docker tag <image_id> <dockerhub_username>/<repository_name>:<tag>
 ```
-then I ran the below command to push
-```
+I ran the following command to push the image to my Docker Hub repository.
+
+```sh
 docker push oxblixxx/backend-flask:1.0
+docker push <dockerhub_username>/<repository_name>:<tag>
 ```
 
 ![docker push](assets/docker/docker-push.jpg)
