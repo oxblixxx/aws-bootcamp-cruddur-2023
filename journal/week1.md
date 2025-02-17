@@ -148,7 +148,8 @@ volumes:
       - app-network
 ```
 
-
+## SETTING DYNAMO DB
+https://github.com/100DaysOfCloud/challenge-dynamodb-local
 
 
 ## Research Best Docker Practices
