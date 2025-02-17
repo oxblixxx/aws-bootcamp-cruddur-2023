@@ -5,7 +5,13 @@ This week, I focused on containerizing the application using Docker. I created s
 ## Homework challenge
 * [Dockerize Backend app](#Dockerize-Backend-App)
 * [Dockerize Frontend app](#Dockerize-Frontend-App)
-
+* [Configure Docker Compose](#Configure-both-the-frontend-and-backend-services-within-a-Docker-Compose)
+* [Integrate Dynamo DB and Postgresql](#Integrate-Dynamo-DB-and-Postgresql)
+* [Research Best Docker Practices](#Research-Best-Docker-Practices)
+* [Container Security Tool](#Container-Security-Tool)
+* [Setup-Snyk](#Setup-Snyk)
+* [Implement a health check](#Implement-a-health-check)
+* [Error Encountered](#Error-Encountered)
 
 ***
 ## Dockerize Backend App
@@ -73,124 +79,155 @@ docker push <dockerhub_username>/<repository_name>:<tag>
 
 ![docker push](assets/docker/docker-push.jpg)
 
-***
-
-## Create an EC2 instance, have docker installed and pull a container
-login to your aws console.
-Then launch and EC2 instance in your preferred region. Connect to the Instance by SSH. I used the EC2 instance connect for ease
-run this command to update your instance
-
-```
-sudo apt update -y && sudo apt upgrade -y
-```
-then we need to install **DOCKER** on our machine with the command
-```
-sudo apt install docker -y
-```
-to check if docker is installed run
-
-```
-docker --version
-```
-![docker install image](assets/docker/docker-install.jpg)
-
-
-we are going to be pulling the nginx container from dockerhub
-run the command
-```
-sudo docker pull nginx
-```
-
-![docker install image](assets/docker/docker-pull.jpg).
-
-I understand I have my private key exposed, I deleted the instance immediately.
 
 ***
-## Research best docker practices
-for this task, I asked **ChatGPT** "What are the best practices of a dockerfile" then I implemented them in the docker file above which are:
-1. ensured to use official images
+## Configure both the frontend and backend services within a Docker Compose
+Both services are defined and configured within a single Docker Compose file, allowing them to be built and run together as a unified application
+
+```yaml
+services:
+  backend-flask:
+    environment:
+      FRONTEND_URL: "https://3000-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+      BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+    build: ./backend-flask
+    ports:
+      - "4567:4567"
+    volumes:
+      - ./backend-flask:/backend-flask
+  frontend-react-js:
+    environment:
+      REACT_APP_BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+    build: ./frontend-react-js
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend-react-js:/frontend-react-js
+# the name flag is a hack to change the default prepend folder
+# name when outputting the image names
+networks: 
+  internal-network:
+    driver: bridge
+    name: cruddur
+```
+
+## Integrate Dynamo DB and Postgresql
+We will also integrate [DynamoDB Local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html) and PostgreSQL for local testing. These databases will simulate the cloud environments, allowing us to test and develop locally before transitioning to the cloud for production deployment.
+
+```yaml
+services:
+  db:
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - '5432:5432'
+    volumes: 
+      - db:/var/lib/postgresql/data
+volumes:
+  db:
+    driver: local
+```
+
+```yaml
+  dynamodb-local:
+    # https://stackoverflow.com/questions/67533058/persist-local-dynamodb-data-in-volumes-lack-permission-unable-to-open-databa
+    # We needed to add user: root to get this working.
+    user: root
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest"
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./docker/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
+    networks:
+      - app-network
+```
+
+
+
+
+## Research Best Docker Practices
+For this task, I consulted ChatGPT to gather insights on the best practices for writing a Dockerfile and Docker Compose file. I then applied those recommendations to optimize the Dockerfile, which include the following:
+1. Ensured to use official images
 2. Document the Dockerfile by putting comments where necessary
-3. used environment variables
-4. use the correct commands
-5. clean up unnecessary files before exiting.
-
-6. container should run in non-root user mode.
-
-create a new group to run the container
-
-```
-$ sudo groupadd dockerusers
-```
-create users for the group
-
-```
-$ sudo adduser $user
-```
-add user to the group created
-
-```
-$ sudo usermod -aG dockerusers $user
-```
-
-change ownership of docker binary
-```
-$ sudo chown $user:dockerusers /usr/bin/docker*
-```
-
-change permission of docker binary files
-```
-$ sudo chmod 750 /usr/bin/docker*
-```
-
-restart the docker daemon
-```
-$ sudo systemctl restart docker
-```
-switch to the docker user
-```
-$ sudo su $user
-```
-test docker commands
-```
-$ docker ps
-```
-signup for [snyk](https://snyk.io/)
-
-Generate an api key, click on your avatar at bottom left corner >>  account settings >> auth token >> click to show
-![auth-token](assets/docker/snyk-1.jpg)
+3. Used environment variables
+4. Use the correct commands
+5. Clean up unnecessary files before exiting.
+6. Container should run in non-root user mode.
+7. Use container security tools to check for Vulns.
 
 
-install snyk on the CLI [check](https://docs.snyk.io/snyk-cli/install-the-snyk-cli)
-```
+## Container Security Tools
+* SNYK
+* Amazon Inspector
+* Clair
+* AWS Secrets Manager
+* Hashicorp Vault
+
+## Setup Snyk
+First, sign up for an account on Snyk. After registering, generate an API key by clicking on your avatar in the bottom-left corner, navigating to Account Settings > Auth Token, and then clicking to display the token.
+
+Next, install the [Snyk CLI](https://docs.snyk.io/snyk-cli/install-the-snyk-cli) on your local machine by following the installation guide here. You can install it using npm with the following command:
+
+```sh
 npm install snyk -g
 ```
-then authenticate
- 
- ```
- snyk auth <api key>
- ```
- 
- confirm it succesfully authenticated with 
- ```
- snyk monitor
- ```
- ![synk-monitor](assets/docker/snyk-monitor.jpg)
 
- to check for vulnerabilities
- 
- ```
- synk container test <container name>
- ```
- ![synk-vulnerability](assets/docker/vulnerability.jpg)
- 
+Then authenticate with the API using
+
+```sh
+snyk auth <api key>
+```
+
+Monitor Your Project:
+To confirm that Snyk is correctly authenticated and monitoring your project, run:
+
+```sh
+snyk monitor
+```
+Check for Vulnerabilities:
+Finally, to check for vulnerabilities in a specific Docker container, run:
+
+```sh
+snyk container test <container name>
+```
 
 ***
 
-## Docker multi-stage build
+## Implement a health check
+Implenting a health check monitors the health of the services to  check if it is healthy or unhealthy.
+we have two services, the backend-flask and the frontend-react-js
+
+```sh
+ healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:portnumber/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+the "portnumber" is to be replaced with the corresponding port number
+this code runs at every interval of 30 seconds and timeout after 10 seconds. After 3 retries, it renders the service unhealthy.
+The **Depends_on,** configuration ensures that the backend service is started before the frontend service.
+
+```sh
+ depends_on:
+      - backend-flask
+```
+
+
+## Error Encountered
+
+### Docker Multistage Build
 I had no prior knowledge about docker multi-stage build, made research on ChatGPT. Merged both contents from my dockerfile in the backend-flask directory and the 
 frontend-react-js directory. Then I got a NPM error
 
-```
+```sh
 npm ERR! code ENOENT
 npm ERR! syscall open
 npm ERR! path /frontend-react-js/package.json
@@ -202,9 +239,10 @@ npm ERR! enoent
 npm ERR! A complete log of this run can be found in:
 npm ERR!     /root/.npm/_logs/2023-03-01T02_20_22_280Z-debug-0.log
 ```
+
 Then I updated the COPY command in my dockerfile
 
-```
+```sh
 COPY frontend-react-js/package.json frontend-react-js/package-lock.json ./
 COPY frontend-react-js/src ./src/
 COPY frontend-react-js/public ./public/
@@ -212,7 +250,7 @@ COPY frontend-react-js/public ./public/
 
 here is my final code
 
-```
+```sh
 # Build backend
 FROM python:3.10-slim-buster AS builder-backend
 
@@ -258,91 +296,3 @@ CMD ["python3", "-m", "flask", "run", "--host=0.0.0.0", "--port=4567"]
 Now it worked smoothly
 
 
-## Implement a health check
-Implenting a health check monitors the health of the services to  check if it is healthy or unhealthy.
-we have to services, the backend-flask and the frontend-react-js
-
-```
- healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://localhost:portnumber/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-```
-
-the "portnumber" is to be replaced with the corresponding port number
-this code runs at every interval of 30 seconds and timeout after 10 seconds. After 3 retries, it renders the service unhealthy.
-The **Depends_on,** configuration ensures that the backend service is started before the frontend service.
-```
- depends_on:
-      - backend-flask
-```
-
-here is the complete code:
-```
- version: "3.8"
-services:
-  backend-flask:
-    environment:
-      FRONTEND_URL: "https://3000-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
-      BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
-    build: ./backend-flask
-    ports:
-      - "4567:4567"
-    volumes:
-      - ./backend-flask:/backend-flask
-    healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://localhost:4567/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3    
-  frontend-react-js:
-    environment:
-      REACT_APP_BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
-    build: ./frontend-react-js
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend-react-js:/frontend-react-js
-    depends_on:
-      - backend-flask 
-    healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://localhost:3000/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-  dynamodb-local:
-    # https://stackoverflow.com/questions/67533058/persist-local-dynamodb-data-in-volumes-lack-permission-unable-to-open-databa
-    # We needed to add user:root to get this working.
-    user: root
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
-    image: "amazon/dynamodb-local:latest"
-    container_name: dynamodb-local
-    ports:
-      - "8000:8000"
-    volumes:
-      - "./docker/dynamodb:/home/dynamodblocal/data"
-    working_dir: /home/dynamodblocal    
-
-  db:
-    image: postgres:13-alpine
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-    ports:
-      - '5432:5432'
-    volumes: 
-      - db:/var/lib/postgresql/data  
-
-# the name flag is a hack to change the default prepend folder
-# name when outputting the image names
-networks: 
-  internal-network:
-    driver: bridge
-    name: cruddur
-
-volumes:
-  db:
-    driver: local    
-```
