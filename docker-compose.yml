@@ -2,21 +2,21 @@ version: "3.8"
 services:
   backend-flask:
     environment:
-      CONNECTION_URL: "${PROD_CONNECTION_URL}" 
+      #CONNECTION_URL: "${PROD_CONNECTION_URL}" 
       FRONTEND_URL: "https://3000-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
       BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
       # HONEYCOMB
       # SERVICE NAME AS TO BE UNIQUE AS PER DIFFERENT SERVICES.
-      OTEL_SERVICE_NAME: 'backend-flask'
-      OTEL_EXPORTER_OTLP_ENDPOINT: "https://api.honeycomb.io"
-      OTEL_EXPORTER_OTLP_HEADERS: "x-honeycomb-team=${HONEYCOMB_API_KEY}"
+      #OTEL_SERVICE_NAME: 'backend-flask'
+      #OTEL_EXPORTER_OTLP_ENDPOINT: "https://api.honeycomb.io"
+      #OTEL_EXPORTER_OTLP_HEADERS: "x-honeycomb-team=${HONEYCOMB_API_KEY}"
       # XRAY
-      AWS_XRAY_URL: "*4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}*"
-      AWS_XRAY_DAEMON_ADDRESS: "xray-daemon:2000"                 
-      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION}"
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      ROLLBAR_ACCESS_TOKEN: "${ROLLBAR_ACCESS_TOKEN}"      
+      #AWS_XRAY_URL: "*4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}*"
+      #AWS_XRAY_DAEMON_ADDRESS: "xray-daemon:2000"                 
+      #AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION}"
+      #AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      #AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      #ROLLBAR_ACCESS_TOKEN: "${ROLLBAR_ACCESS_TOKEN}"      
     build: ./backend-flask
     ports:
       - "4567:4567"
@@ -30,10 +30,10 @@ services:
   frontend-react-js:
     environment:
       REACT_APP_BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
-      REACT_APP_AWS_PROJECT_REGION: "${AWS_DEFAULT_REGION}"
-      REACT_APP_AWS_COGNITO_REGION: "${AWS_DEFAULT_REGION}"
-      REACT_APP_AWS_USER_POOLS_ID: "${REACT_APP_AWS_USER_POOLS_ID}" 
-      REACT_APP_CLIENT_ID: "${REACT_APP_CLIENT_ID}"      
+      #REACT_APP_AWS_PROJECT_REGION: "${AWS_DEFAULT_REGION}"
+      #REACT_APP_AWS_COGNITO_REGION: "${AWS_DEFAULT_REGION}"
+      #REACT_APP_AWS_USER_POOLS_ID: "${REACT_APP_AWS_USER_POOLS_ID}" 
+      #REACT_APP_CLIENT_ID: "${REACT_APP_CLIENT_ID}"      
     build: ./frontend-react-js
     ports:
       - "3000:3000"
@@ -45,16 +45,16 @@ services:
       #interval: 30s
       #timeout: 10s
       #retries: 3
-  xray-daemon:
-    image: "amazon/aws-xray-daemon"
-    environment:
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      AWS_REGION: "us-east-1"
-    command:
-      - "xray -o -b xray-daemon:2000"
-    ports:
-      - 2000:2000/udp      
+  # xray-daemon:
+  #   image: "amazon/aws-xray-daemon"
+  #   environment:
+  #     AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+  #     AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+  #     AWS_REGION: "us-east-1"
+  #   command:
+  #     - "xray -o -b xray-daemon:2000"
+  #   ports:
+  #     - 2000:2000/udp      
   #dynamodb-local:
     # https://stackoverflow.com/questions/67533058/persist-local-dynamodb-data-in-volumes-lack-permission-unable-to-open-databa
     # We needed to add user:root to get this working.
@@ -68,28 +68,28 @@ services:
    #   - "./docker/dynamodb:/home/dynamodblocal/data"
    # working_dir: /home/dynamodblocal    
 
-  db:
-    image: postgres:13-alpine
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-    ports:
-      - '5432:5432'
-    volumes: 
-      - db:/var/lib/postgresql/data  
+  # db:
+  #   image: postgres:13-alpine
+  #   restart: always
+  #   environment:
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=password
+  #   ports:
+  #     - '5432:5432'
+  #   volumes: 
+  #     - db:/var/lib/postgresql/data  
 
 #opentelemetry container
-  otel-collector:
-    image: "otel/opentelemetry-collector"
-    environment:
-      HONEYCOMB_API_KEY: "${HONEYCOMB_API_KEY}" # Same honeycomb api key used in the backend enviroment
-    command: [--config=/etc/otel-collector-config.yaml]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - 14268:14268
-      - 4318:4318
+  # otel-collector:
+  #   image: "otel/opentelemetry-collector"
+  #   environment:
+  #     HONEYCOMB_API_KEY: "${HONEYCOMB_API_KEY}" # Same honeycomb api key used in the backend enviroment
+  #   command: [--config=/etc/otel-collector-config.yaml]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - 14268:14268
+  #     - 4318:4318
 # the name flag is a hack to change the default prepend folder
 # name when outputting the image names
 networks: 
