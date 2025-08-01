@@ -21,7 +21,7 @@ tasks:
           @opentelemetry/instrumentation-fetch \
           @npm i aws-amplify
 
-
+### POSTGRESSS CLI CLIENT
   - name: postgres
     init: |
       curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg

@@ -148,6 +148,69 @@ volumes:
       - app-network
 ```
 
+After spinning up the docker compose file, run `docker ps` this should show that the containers are running with no errors. To access `postgres` via the cli, postgres-client needs to be installed. Also the installation script is added to .gitpod.yaml to install on fresh spinning up of gitpod.
+
+```sh
+curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+sudo apt update
+sudo apt install -y postgresql-client-13 libpq-dev   \
+```
+
+To access `postgres` DB, use the `psql -Upostgres -h localhost -p` command to login, the default password is `password`. VSCODE extensions can also be used to access the database. 
+
+
+Meanwhile for DYNAMO-DB, it hosted on `8000`, and to interact with it, AWS CLI needs to be installed! AWS cli is installed according to the docs
+
+```sh
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+```
+
+Also, AWS cli installation script is added to .gitpod.yaml to install on startup. Interact with DYNAMO-DB with this below commands.
+
+```sh
+aws dynamodb list-tables --endpoint-url http://localhost:8000
+```
+
+Use this to create table and add contents in the table
+
+```sh
+aws dynamodb create-table \
+    --table-name Users \
+    --attribute-definitions AttributeName=UserId,AttributeType=S \
+    --key-schema AttributeName=UserId,KeyType=HASH \
+    --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+    --endpoint-url http://localhost:8000
+
+
+aws dynamodb put-item \
+    --table-name Users \
+    --item '{"UserId": {"S": "123"}, "Name": {"S": "John Doe"}}' \
+    --endpoint-url http://localhost:8000
+```
+
+Now run this list-tables command to see that it works correctly
+
+```sh
+ aws dynamodb list-tables --endpoint-url http://localhost:8000
+```
+
+Here should be the results
+
+```sh
+{
+    "TableNames": [
+        "Music",
+        "Users"
+    ]
+}
+
+```
+
+###
+OPENAPI extensions is downloaded on VSCODE to create new api's, the file is located in the `.backend-flask` directory. Open the api file, then open the api extension to view the api endpoints!!
 ## SETTING DYNAMO DB
 https://github.com/100DaysOfCloud/challenge-dynamodb-local
 
@@ -201,7 +264,7 @@ snyk container test <container name>
 ***
 
 ## Implement a health check
-Implenting a health check monitors the health of the services to  check if it is healthy or unhealthy.
+Implenting a health check monitors the health of the services to  check if it is healthy or unhealthy. [blogs_!](https://lumigo.io/container-monitoring/docker-health-check-a-practical-guide/) [blog-2](https://dev.to/idsulik/a-beginners-guide-to-docker-health-checks-and-container-monitoring-3kh6) [video_1](https://www.youtube.com/watch?v=mgMhQo279Xk)
 we have two services, the backend-flask and the frontend-react-js
 
 ```sh
@@ -209,7 +272,7 @@ we have two services, the backend-flask and the frontend-react-js
       test: ["CMD-SHELL", "curl --fail http://localhost:portnumber/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 3https://4567-oxblixxx-awsbootcampcru-7wlfsdpa925.ws-eu120.gitpod.io/api/activites/notification
 ```
 
 the "portnumber" is to be replaced with the corresponding port number
@@ -294,6 +357,19 @@ CMD ["python3", "-m", "flask", "run", "--host=0.0.0.0", "--port=4567"]
 
 ```
 
+Also while connecting to psql, I got this error
+
+```sh
+psql -Upostgres
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: No such file or directory
+        Is the server running locally and accepting connections on that socket
+```
+
+The fix was to include the `host`, otherwise postgres listens for connections from the host, meaning it tries to look at the host instead of the docker container && the default password is password.
+
+```sh
+psql -Upostgres -h localhost
+```
 Now it worked smoothly
 
 
