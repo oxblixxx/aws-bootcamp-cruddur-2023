@@ -21,6 +21,15 @@ tasks:
           @opentelemetry/instrumentation-fetch \
           @npm i aws-amplify
 
+  - name: export env
+    init: |
+      cd /workspace/aws-bootcamp-cruddur-2023
+      echo "GITPOD_WORKSPACE_ID=$GITPOD_WORKSPACE_ID" >> .env
+      echo "GITPOD_WORKSPACE_CLUSTER_HOST=$GITPOD_WORKSPACE_CLUSTER_HOST" >> .env
+
+
+
+
 ### POSTGRESSS CLI CLIENT
   - name: postgres
     init: |
