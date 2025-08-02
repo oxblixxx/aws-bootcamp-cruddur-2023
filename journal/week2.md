@@ -58,9 +58,10 @@ RequestsInstrumentor().instrument()
       OTEL_EXPORTER_OTLP_HEADERS: "x-honeycomb-team=${HONEYCOMB_API_KEY}"
  ```
  
- 
-## Instrument AWS X-Ray into backend flask application
+FROM THE HONEYCOMB UI, FETCH THE API AND EXPORT IT
 
+## Instrument AWS X-Ray into backend flask application
+Implementing AWS XRAY
 add to requirements.txt
  
 ```
