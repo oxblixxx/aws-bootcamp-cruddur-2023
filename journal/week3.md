@@ -46,7 +46,7 @@ Your cognito region should be the region you created the User pool in the same w
 # Implement API calls to Amazon Coginto for custom login, signup, recovery and forgot password page
 
 The respective directories are frontend-react-js/src/pages/signinpage.js, frontend-react-js/src/pages/signuppage.js, frontend-react-js/src/pages/recoverpage.js frontend-react-js/src/pages/confirmationpage.js
-
+### https://docs.amplify.aws/react/start/connect-to-aws-resources/
 # Signin page
 open the directory frontend-react-js/src/pages/signinpage.js with your editor
 
@@ -389,4 +389,8 @@ const signOut = async () => {
 
 ERROR ENCOUNTERED 
 Currently facing this issue, and it's not making me progress with the COGNITO setup, 
-Client 3li45s2a3no4tepin1lpfvpr8j is configured with secret but SECRET_HASH was not received  followed up with this github issues `https://github.com/aws-amplify/amplify-js/issues/13568`
+Client 3li45s2a3no4tepin1lpfvpr8j is configured with secret but SECRET_HASH was not received  followed up with this github issues `https://github.com/aws-amplify/amplify-js/issues/13568`. THE FIX FOR THIS CURRENTYLY IS TO CREATE A SINGLE PAGE USER POOL ON AWS, IT CREATES A COGNITO WITHOUT SECRETS! 
+
+ALSO, I GOT THIS ERROR `Username cannot be of email format, since user pool is configured for email alias.` THE FIX FOR THE ERROR IS THAT, WHILE SIGNING UP, I BASICALL TICKED SOMETHING INCORRECTLY, I SIMPLY RECREATED A NEW USER POOL, THEN for `Options for sign-in identifier` I chose only e mail! Before i chose email and username
+
+what was achieved!!! SETUP AU

@@ -24,7 +24,9 @@ tasks:
   - name: export env
     init: |
       cd /workspace/aws-bootcamp-cruddur-2023
+      cp .env.example .env
       echo "GITPOD_WORKSPACE_ID=$GITPOD_WORKSPACE_ID" >> .env
+      echo "AWS_DEFAULT_REGION=us-east-1" >> .env
       echo "GITPOD_WORKSPACE_CLUSTER_HOST=$GITPOD_WORKSPACE_CLUSTER_HOST" >> .env
 
 
