@@ -385,3 +385,8 @@ const signOut = async () => {
 
 
 
+
+
+ERROR ENCOUNTERED 
+Currently facing this issue, and it's not making me progress with the COGNITO setup, 
+Client 3li45s2a3no4tepin1lpfvpr8j is configured with secret but SECRET_HASH was not received  followed up with this github issues `https://github.com/aws-amplify/amplify-js/issues/13568`
