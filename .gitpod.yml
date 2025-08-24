@@ -25,9 +25,10 @@ tasks:
     init: |
       cd /workspace/aws-bootcamp-cruddur-2023
       cp .env.example .env
-      echo "GITPOD_WORKSPACE_ID=$GITPOD_WORKSPACE_ID" >> .env
-      echo "AWS_DEFAULT_REGION=us-east-1" >> .env
-      echo "GITPOD_WORKSPACE_CLUSTER_HOST=$GITPOD_WORKSPACE_CLUSTER_HOST" >> .env
+      sed -i "/^GITPOD_WORKSPACE_ID=/c\GITPOD_WORKSPACE_ID=$GITPOD_WORKSPACE_ID" .env || echo "GITPOD_WORKSPACE_ID=$GITPOD_WORKSPACE_ID" >> .env
+      sed -i "/^AWS_DEFAULT_REGION=/c\AWS_DEFAULT_REGION=us-east-1" .env || echo "AWS_DEFAULT_REGION=us-east-1" >> .env
+      sed -i "/^GITPOD_WORKSPACE_CLUSTER_HOST=/c\GITPOD_WORKSPACE_CLUSTER_HOST=$GITPOD_WORKSPACE_CLUSTER_HOST" .env || echo "GITPOD_WORKSPACE_CLUSTER_HOST=$GITPOD_WORKSPACE_CLUSTER_HOST" >> .env
+
 
 
 
