@@ -73,7 +73,7 @@ to avoide passwword prompt, there a various ways to login but we will use the CO
 
 ```
 psql postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}
-psql "postgresql://postgres:password@localhost:5432/cruddur"
+psql postgresql://postgres:password@localhost:5432
 ```
 
 create a bin directory, in the bin directory create files without an extension db-create, db-schema-load, db-drop. from anywhere on the terminal run the command 

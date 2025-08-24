@@ -1,5 +1,6 @@
 #! /usr/bin/bash 
-
+# Resolve the absolute path to the schema.sql file so it can be reliably referenced,
+# regardless of the current working directory.
 schema_path="$(realpath ..)/db/schema.sql"
 
 echo $schema_path
@@ -12,7 +13,7 @@ if [ "$1" == "prod" ]; then
     $URL
 else 
     echo "using in development db"
-    URL=$CONNECTION_URL
+    URL=$LOCAL_CONNECTION_URL
 fi
 
 psql $PROD_CONNECTION_URL cruddur < $schema_path

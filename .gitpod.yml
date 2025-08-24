@@ -29,10 +29,6 @@ tasks:
       sed -i "/^AWS_DEFAULT_REGION=/c\AWS_DEFAULT_REGION=us-east-1" .env || echo "AWS_DEFAULT_REGION=us-east-1" >> .env
       sed -i "/^GITPOD_WORKSPACE_CLUSTER_HOST=/c\GITPOD_WORKSPACE_CLUSTER_HOST=$GITPOD_WORKSPACE_CLUSTER_HOST" .env || echo "GITPOD_WORKSPACE_CLUSTER_HOST=$GITPOD_WORKSPACE_CLUSTER_HOST" >> .env
 
-
-
-
-
 ### POSTGRESSS CLI CLIENT
   - name: postgres
     init: |
@@ -40,6 +36,7 @@ tasks:
       echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
       sudo apt update
       sudo apt install -y postgresql-client-13 libpq-dev   \
+      export LOCAL_CONNECTION_URL="postgresql://postgres:password@localhost:5432"
     command: |
       export GITPOD_IP=$(curl ifconfig.me)/32
       source "$THEIA_WORKSPACE_ROOT/backend-flask/bin/rds-update-sg-rule"   

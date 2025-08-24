@@ -5,7 +5,7 @@ if [ "$1" == "prod" ]; then
     URL=$PROD_CONNECTION_URL
 else 
     echo "using in development db"
-    URL=$CONNECTION_URL
+    URL=$LOCAL_CONNECTION_URL
 fi
 
 
