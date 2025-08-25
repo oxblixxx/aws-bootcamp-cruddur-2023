@@ -36,13 +36,13 @@ tasks:
       echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
       sudo apt update
       sudo apt install -y postgresql-client-13 libpq-dev
-      export LOCAL_CONNECTION_URL="postgresql://postgres:password@localhost:5432"
     command: |
       export GITPOD_IP=$(curl ifconfig.me)/32
       source "$THEIA_WORKSPACE_ROOT/backend-flask/bin/rds-update-sg-rule"   
   
   - name: start docker compose
     init: |
+      export LOCAL_CONNECTION_URL="postgresql://postgres:password@localhost:5432"
       sudo docker compose up -d
 vscode:
   extensions:
