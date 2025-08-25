@@ -14,4 +14,4 @@ else
     URL=$LOCAL_CONNECTION_URL
 fi
 
-psql $PROD_CONNECTION_URL cruddur < $seed_path
+psql "$URL" cruddur < $seed_path

@@ -1,4 +1,5 @@
 #! /usr/bin/bash
+### HERE IS THE COMPILATION OF THE 4 DB SCRIPTS
 set -e # stop if it fails at any point
 
 CYAN='\033[1;36m'
