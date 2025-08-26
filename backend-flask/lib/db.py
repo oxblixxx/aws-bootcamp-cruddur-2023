@@ -1,3 +1,4 @@
+# https://www.psycopg.org/psycopg3/docs/advanced/pool.html
 from psycopg_pool import ConnectionPool
 import os
 import re
