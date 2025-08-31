@@ -2,7 +2,7 @@
 
 ## Creating a postgres database usin the CLI
 
-In the prior week, we included Postgresql database image in our docker-compose.yml and in the gitpod.yml, there is the task to install postgresql. 
+In the prior week, I included Postgresql database image in our docker-compose.yml and in the gitpod.yml, there is the task to install postgresql. 
 
 configure aws credentials then open the terminal, copy and and paste the below code, stopping the database on AWS console ensentially stops it for 7days of which it starts automatically.
 
@@ -180,10 +180,10 @@ if [ "$1" == "production" ]; then
     URL=$PROD_CONNECTION_URL
 else 
     echo "using in development db"
-    URL=$CONNECTION_URL
+    URL=$LOCAL_CONNECTION_URL
 fi
 
-$CONNECTION_URL cruddur < $seed_path
+$URL cruddur < $seed_path
 ```
 
 You can as well run a a script to compile the db-load, db-seed in a script as well, cd into backend-flask/bin create a file db-load and put in the below command in there
@@ -212,7 +212,7 @@ if [ "$1" == "prod" ]; then
     URL=$PROD_CONNECTION_URL
 else 
     echo "using in development db"
-    URL=$CONNECTION_URL
+    URL=$LOCAL_CONNECTION_URL
 fi
 
 
@@ -311,14 +311,12 @@ to automatically update the gitpod IP on relaunch, login to your console, fetch 
 ```sh
 export DB_SG_ID="sg-08895646d8830b0eb"
 gp env DB_SG_ID="sg-08895646d8830b0eb"
-export DB_SG_RULE_ID="sgr-0eab2429a165ea98c"
-gp env DB_SG_RULE_ID="sgr-0eab2429a165ea98c"
 ```
 
 ```sh
-aws ec2 modify-security-group-rules \
-    --group-id $DB_SG_ID \
-    --security-group-rules "SecurityGroupRuleId=$DB_SG_RULE_ID,SecurityGroupRule={Description=GITPOD,IpProtocol=tcp,FromPort=5432,ToPort=5432,CidrIpv4=$GITPOD_IP/32}"
+aws ec2 authorize-security-group-ingress \
+  --group-id $DB_SG_ID \
+  --ip-permissions IpProtocol=tcp,FromPort=5432,ToPort=5432,IpRanges="[{CidrIp=${GITPOD_IP}/32,Description=\"GITPOD\"}]"
 ```
 
 on relaunch, to set gitpod to automatticaly update the sg, add the below code
@@ -327,6 +325,8 @@ on relaunch, to set gitpod to automatticaly update the sg, add the below code
       export GITPOD_IP=$(curl ifconfig.me)
       source "$THEIA_WORKSPACE_ROOT/backend-flask/rds-update-sg-rule"
 ```
+
+Also set the PROD env `export PROD_CONNECTION_URL="postgresql://oxblixxx:wearewinning@cruddur-db-instance.c2vcui044zod.us-east-1.rds.amazonaws.com/cruddur"`
 ---
 # Create a Lamda function for Cognito Confirmation 
 login to aws console, create a lamda function with python version 3.8

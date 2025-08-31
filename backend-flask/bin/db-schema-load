@@ -4,16 +4,15 @@
 schema_path="$(realpath ..)/db/schema.sql"
 
 echo $schema_path
-
 echo "db-schema-load"
 
 if [ "$1" == "prod" ]; then
     echo "using production db"
     URL=$PROD_CONNECTION_URL
-    $URL
 else 
-    echo "using in development db"
+    echo "using development db"
     URL=$LOCAL_CONNECTION_URL
 fi
 
-psql "$URL" cruddur < "$schema_path"
+# Run psql with connection string and schema file
+psql "$URL" -f "$schema_path"
