@@ -35,19 +35,11 @@
     }
   },
 
-  "postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release postgresql-client-13 libpq-dev",
+  "postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release postgresql-client-13 libpq-dev && chmod +x /workspaces/.devcontainer/setup.sh",
   //"postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release libpq-dev",
 
-  "postStartCommand": [
-  "cd /workspace/aws-bootcamp-cruddur-2023/frontend-react-js",
-  "npm install",
-  "npm install --save @opentelemetry/api @opentelemetry/sdk-trace-web @opentelemetry/exporter-trace-otlp-http @opentelemetry/context-zone @opentelemetry/instrumentation @opentelemetry/instrumentation-xml-http-request @opentelemetry/instrumentation-fetch aws-amplify",
-  "cd /workspace/aws-bootcamp-cruddur-2023",
-  "cp -n .env.example .env || true",
-  "sed -i \"s|^AWS_DEFAULT_REGION=.*|AWS_DEFAULT_REGION=us-east-1|\" .env || echo AWS_DEFAULT_REGION=us-east-1 >> .env",
-  "export LOCAL_CONNECTION_URL=postgresql://postgres:password@localhost:5432",
-  "sudo docker compose up -d"
-  ],
+  "postStartCommand": "/workspaces/.devcontainer/setup.sh",
+//  "postStartCommand": "cd /workspaces/aws-bootcamp-cruddur-2023/frontend-react-js && npm install && npm install --save @opentelemetry/api @opentelemetry/sdk-trace-web @opentelemetry/exporter-trace-otlp-http @opentelemetry/context-zone @opentelemetry/instrumentation @opentelemetry/instrumentation-xml-http-request @opentelemetry/instrumentation-fetch aws-amplify && cd /workspaces/aws-bootcamp-cruddur-2023 && cp -n .env.example .env || true && sed -i \"s|^AWS_DEFAULT_REGION=.*|AWS_DEFAULT_REGION=us-east-1|\" .env || echo AWS_DEFAULT_REGION=us-east-1 >> .env && sudo docker compose up -d",
 
   "forwardPorts": [3000, 4567, 2000],
 
