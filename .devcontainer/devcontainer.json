@@ -1,41 +1,66 @@
 {
-	"name": "Cruddur Configuration",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	"features": {
-		"ghcr.io/devcontainers/features/aws-cli:1": {},
-		"ghcr.io/devcontainers/features/terraform:1": {}
-	},
-	"remoteEnv": {
-		"AWS_CLI_AUTO_PROMPT": "on-partial"
-	},	
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ms-azuretools.vscode-docker",
-				"ms-python.python",
-				"vscodevim.vim",
-				"HashiCorp.terraform",
-                "ms-azuretools.vscode-azureterraform"
-			],
-			"settings": {
-				"terminal.integrated.fontSize": 20,
-				"editor.fontSize": 20,
-				"workbench.colorTheme": "Default Dark+ Experimental"
-			}
-		}
-	},
-		
-		
-	"postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release",
-	"postStartCommand": "cd /workspace/aws-bootcamp-cruddur-2023/frontend-react-js && npm install && npm install --save @opentelemetry/api @opentelemetry/sdk-trace-web @opentelemetry/exporter-trace-otlp-http @opentelemetry/context-zone @opentelemetry/instrumentation @opentelemetry/instrumentation-xml-http-request @opentelemetry/instrumentation-fetch aws-amplify"
+  "name": "Cruddur Configuration",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+  "features": {
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/terraform:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    //"ghcr.io/devcontainers/features/postgres-client:1": {
+    //  "version": "13"
+   // }
+  },
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+  "remoteEnv": {
+    "AWS_CLI_AUTO_PROMPT": "on-partial",
+    "AWS_DEFAULT_REGION": "us-east-1"
+  },
 
-	// Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "devcontainer"
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "ms-python.python",
+        "vscodevim.vim",
+        "HashiCorp.terraform",
+        "ms-azuretools.vscode-azureterraform",
+        "42Crunch.vscode-openapi",
+        "cweijan.vscode-postgresql-client2"
+      ],
+      "settings": {
+        "terminal.integrated.fontSize": 20,
+        "editor.fontSize": 20,
+        "workbench.colorTheme": "Default Dark+ Experimental"
+      }
+    }
+  },
+
+  "postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release postgresql-client-13 libpq-dev",
+  //"postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release libpq-dev",
+
+  "postStartCommand": [
+  "cd /workspace/aws-bootcamp-cruddur-2023/frontend-react-js",
+  "npm install",
+  "npm install --save @opentelemetry/api @opentelemetry/sdk-trace-web @opentelemetry/exporter-trace-otlp-http @opentelemetry/context-zone @opentelemetry/instrumentation @opentelemetry/instrumentation-xml-http-request @opentelemetry/instrumentation-fetch aws-amplify",
+  "cd /workspace/aws-bootcamp-cruddur-2023",
+  "cp -n .env.example .env || true",
+  "sed -i \"s|^AWS_DEFAULT_REGION=.*|AWS_DEFAULT_REGION=us-east-1|\" .env || echo AWS_DEFAULT_REGION=us-east-1 >> .env",
+  "export LOCAL_CONNECTION_URL=postgresql://postgres:password@localhost:5432",
+  "sudo docker compose up -d"
+  ],
+
+  "forwardPorts": [3000, 4567, 2000],
+
+  "portsAttributes": {
+    "3000": {
+      "label": "frontend",
+      "onAutoForward": "openBrowser"
+    },
+    "4567": {
+      "label": "backend"
+    },
+    "2000": {
+      "label": "xray-daemon"
+    }
+  }
 }
