@@ -5,10 +5,9 @@
   "features": {
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/terraform:1": {},
-    //"ghcr.io/devcontainers/features/docker-in-docker:2": {}
-    //"ghcr.io/devcontainers/features/postgres-client:1": {
-    //  "version": "13"
-    // }
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
   },
 
   "remoteEnv": {
@@ -30,21 +29,17 @@
       "settings": {
         "terminal.integrated.fontSize": 20,
         "editor.fontSize": 20
-        //"workbench.colorTheme": "Default Dark+ Experimental"
       }
     }
   },
 
-  "postCreateCommand": "sudo apt-get update && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg && echo 'deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list && sudo apt update && sudo apt install -y postgresql-client-13 libpq-dev && chmod +x .devcontainer/setup.sh",
-  "postStartCommand": ".devcontainer/setup.sh"
+  "postCreateCommand": "sudo apt-get update && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg && echo 'deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list && sudo apt update && sudo apt install -y postgresql-client-13 libpq-dev && npm install -g commitizen cz-gitmoji-changelog cz-conventional-changelog && echo '{ \"path\": \"cz-gitmoji-changelog\" }' > ~/.czrc && chmod +x .devcontainer/setup.sh",
 
-  //  "postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release postgresql-client-13 libpq-dev && chmod +x /workspaces/${localWorkspaceFolderBasename}/.devcontainer/setup.sh",
-  // "postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release libpq-dev",
+  "postStartCommand": ".devcontainer/setup.sh",
 
-  //  "postStartCommand": "/workspaces/${localWorkspaceFolderBasename}/.devcontainer/setup.sh",
-  //  "postStartCommand": "cd /workspaces/aws-bootcamp-cruddur-2023/frontend-react-js && npm install && npm install --save @opentelemetry/api @opentelemetry/sdk-trace-web @opentelemetry/exporter-trace-otlp-http @opentelemetry/context-zone @opentelemetry/instrumentation @opentelemetry/instrumentation-xml-http-request @opentelemetry/instrumentation-fetch aws-amplify && cd /workspaces/aws-bootcamp-cruddur-2023 && cp -n .env.example .env || true && sed -i \"s|^AWS_DEFAULT_REGION=.*|AWS_DEFAULT_REGION=us-east-1|\" .env || echo AWS_DEFAULT_REGION=us-east-1 >> .env && sudo docker compose up -d",
-  
-  ,"forwardPorts": [3000, 4567, 2000],
+  "postAttachCommand": "gh codespace ports visibility 3000:public -c $CODESPACE_NAME && gh codespace ports visibility 4567:public -c $CODESPACE_NAME && gh codespace ports visibility 2000:public -c $CODESPACE_NAME",
+
+  "forwardPorts": [3000, 4567, 2000],
 
   "portsAttributes": {
     "3000": {
