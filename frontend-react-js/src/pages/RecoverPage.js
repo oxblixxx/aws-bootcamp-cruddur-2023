@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Auth } from 'aws-amplify';
 
 export default function RecoverPage() {
-  // Username is Eamil
+  // Username is Email
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [passwordAgain, setPasswordAgain] = React.useState('');
@@ -21,6 +21,7 @@ export default function RecoverPage() {
     .catch((err) => setErrors(err.message) );
     return false
   }
+  
   const onsubmit_confirm_code = async (event) => {
     event.preventDefault();
     setErrors('')
@@ -29,7 +30,7 @@ export default function RecoverPage() {
       .then((data) => setFormState('success'))
       .catch((err) => setErrors(err.message) );
     } else {
-      setCognitoErrors('Passwords do not match')
+      setErrors('Passwords do not match')  // ✅ Fixed: was setCognitoErrors
     }
     return false
   }
@@ -60,19 +61,18 @@ export default function RecoverPage() {
       <h2>Recover your Password</h2>
       <div className='fields'>
         <div className='field text_field username'>
-          <label>Email</label>
-          <input
-            type="text"
-            value={username}
-            onChange={username_onchange} 
-          />
+         <label>Email</label>
+         <input
+           type="text"
+           value={username}
+           onChange={username_onchange} 
+         />
         </div>
       </div>
       {el_errors}
       <div className='submit'>
         <button type='submit'>Send Recovery Code</button>
       </div>
-
     </form>
     )
   }
@@ -85,31 +85,31 @@ export default function RecoverPage() {
       <h2>Recover your Password</h2>
       <div className='fields'>
         <div className='field text_field code'>
-          <label>Reset Password Code</label>
-          <input
-            type="text"
-            value={code}
-            onChange={code_onchange} 
-          />
+         <label>Reset Password Code</label>
+         <input
+           type="text"
+           value={code}
+           onChange={code_onchange} 
+         />
         </div>
         <div className='field text_field password'>
-          <label>New Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={password_onchange} 
-          />
+         <label>New Password</label>
+         <input
+           type="password"
+           value={password}
+           onChange={password_onchange} 
+         />
         </div>
         <div className='field text_field password_again'>
-          <label>New Password Again</label>
-          <input
-            type="password"
-            value={passwordAgain}
-            onChange={password_again_onchange} 
-          />
+         <label>New Password Again</label>
+         <input
+           type="password"
+           value={passwordAgain}
+           onChange={password_again_onchange} 
+         />
         </div>
       </div>
-      {errors}
+      {el_errors}  {/* ✅ Fixed: was {errors} */}
       <div className='submit'>
         <button type='submit'>Reset Password</button>
       </div>
@@ -118,12 +118,13 @@ export default function RecoverPage() {
   }
 
   const success = () => {
-    return (<form>
-      <p>Your password has been successfully reset!</p>
-      <Link to="/signin" className="proceed">Proceed to Signin</Link>
-    </form>
+    return (
+      <div>  {/* ✅ Changed from <form> to <div> */}
+        <p>Your password has been successfully reset!</p>
+        <Link to="/signin" className="proceed">Proceed to Signin</Link>
+      </div>
     )
-    }
+  }
 
   let form;
   if (formState == 'send_code') {
@@ -144,7 +145,6 @@ export default function RecoverPage() {
       <div className='recover-wrapper'>
         {form}
       </div>
-
     </article>
   );
 }
