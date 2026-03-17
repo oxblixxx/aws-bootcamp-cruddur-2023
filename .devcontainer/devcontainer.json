@@ -5,7 +5,7 @@
   "features": {
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/terraform:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    //"ghcr.io/devcontainers/features/docker-in-docker:2": {}
     //"ghcr.io/devcontainers/features/postgres-client:1": {
     //  "version": "13"
     // }
@@ -35,7 +35,7 @@
     }
   },
 
-  "postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release postgresql-client-13 libpq-dev && chmod +x .devcontainer/setup.sh",
+  "postCreateCommand": "sudo apt-get update && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg && echo 'deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list && sudo apt update && sudo apt install -y postgresql-client-13 libpq-dev && chmod +x .devcontainer/setup.sh",
   "postStartCommand": ".devcontainer/setup.sh"
 
   //  "postCreateCommand": "sudo apt update && sudo apt install -y curl gnupg2 lsb-release postgresql-client-13 libpq-dev && chmod +x /workspaces/${localWorkspaceFolderBasename}/.devcontainer/setup.sh",
