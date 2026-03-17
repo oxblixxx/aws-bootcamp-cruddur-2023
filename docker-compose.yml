@@ -3,8 +3,8 @@ services:
   backend-flask:
     environment:
       CONNECTION_URL: "${LOCAL_CONNECTION_URL}" 
-      FRONTEND_URL: "https://3000-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
-      BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+      FRONTEND_URL: "https://3000-${CODESPACE_NAME}-4567.preview.app.github.dev"
+      BACKEND_URL: "https://4567-${CODESPACE_NAME}-4567.preview.app.github.dev"
       # HONEYCOMB
       # SERVICE NAME AS TO BE UNIQUE AS PER DIFFERENT SERVICES.
       OTEL_SERVICE_NAME: 'backend-flask'
@@ -23,13 +23,13 @@ services:
     volumes:
       - ./backend-flask:/backend-flask
     #healthcheck:
-     # test: ["CMD-SHELL", "curl --fail http://localhost:4567/health || exit 1"]
+    # test: ["CMD-SHELL", "curl --fail http://localhost:4567/health || exit 1"]
     #  interval: 30s
     #  timeout: 10s
     #  retries: 3    aa
   frontend-react-js:
     environment:
-      REACT_APP_BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+      REACT_APP_BACKEND_URL: "https://4567-${CODESPACE_NAME}-4567.preview.app.github.dev"
       REACT_APP_AWS_PROJECT_REGION: "${AWS_DEFAULT_REGION}"
       REACT_APP_AWS_COGNITO_REGION: "${AWS_DEFAULT_REGION}"
       REACT_APP_AWS_USER_POOLS_ID: "${REACT_APP_AWS_USER_POOLS_ID}" 
@@ -41,11 +41,11 @@ services:
     volumes:
       - ./frontend-react-js:/frontend-react-js
     #depends_on:
-     #healthcheck:
-      #test: ["CMD-SHELL", "curl --fail http://localhost:3000/health || exit 1"]
-      #interval: 30s
-      #timeout: 10s
-      #retries: 3
+    #healthcheck:
+    #  test: ["CMD-SHELL", "curl --fail http://localhost:3000/health || exit 1"]
+    #  interval: 30s
+    #  timeout: 10s
+    #  retries: 3
   xray-daemon:
     image: "amazon/aws-xray-daemon"
     environment:
@@ -59,15 +59,16 @@ services:
   dynamodb-local:
     #https://stackoverflow.com/questions/67533058/persist-local-dynamodb-data-in-volumes-lack-permission-unable-to-open-databa
     #We needed to add user:root to get this working.
-   user: root
-   command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
-   image: "amazon/dynamodb-local:latest"
-   container_name: dynamodb-local
-   ports:
-     - "8000:8000"
-   volumes:
-     - "./docker/dynamodb:/home/dynamodblocal/data"
-   working_dir: /home/dynamodblocal    
+    user: root
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest"
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./docker/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal     
+
 
   pg-db-local:
     image: postgres:13-alpine
@@ -80,23 +81,25 @@ services:
     volumes: 
       - db:/var/lib/postgresql/data  
 
+
 #opentelemetry container
-  # otel-collector:
-  #   image: "otel/opentelemetry-collector"
-  #   environment:
-  #     HONEYCOMB_API_KEY: "${HONEYCOMB_API_KEY}" # Same honeycomb api key used in the backend enviroment
-  #   command: [--config=/etc/otel-collector-config.yaml]
-  #   volumes:
-  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-  #   ports:
-  #     - 14268:14268
-  #     - 4318:4318
+# otel-collector:
+#   image: "otel/opentelemetry-collector"
+#   environment:
+#     HONEYCOMB_API_KEY: "${HONEYCOMB_API_KEY}" # Same honeycomb api key used in the backend enviroment
+#   command: [--config=/etc/otel-collector-config.yaml]
+#   volumes:
+#     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+#   ports:
+#     - 14268:14268
+#     - 4318:4318
 # the name flag is a hack to change the default prepend folder
 # name when outputting the image names
 networks: 
   internal-network:
     driver: bridge
     name: cruddur
+
 
 volumes:
   db:
