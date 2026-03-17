@@ -157,7 +157,7 @@ sudo apt update
 sudo apt install -y postgresql-client-13 libpq-dev   \
 ```
 
-To access `postgres` DB, use the `psql -Upostgres -h localhost -p` command to login, the default password is `password`. VSCODE extensions can also be used to access the database. 
+To access `postgres` DB, use the `psql -Upostgres -h localhost` command to login, the default password is `password`. VSCODE extensions can also be used to access the database. 
 
 
 Meanwhile for DYNAMO-DB, it hosted on `8000`, and to interact with it, AWS CLI needs to be installed! AWS cli is installed according to the docs
