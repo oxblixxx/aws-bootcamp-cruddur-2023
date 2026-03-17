@@ -37,7 +37,7 @@
 
   "postStartCommand": ".devcontainer/setup.sh",
 
-  "postAttachCommand": "gh codespace ports visibility 3000:public -c $CODESPACE_NAME && gh codespace ports visibility 4567:public -c $CODESPACE_NAME && gh codespace ports visibility 2000:public -c $CODESPACE_NAME",
+  "postAttachCommand": "gh codespace ports visibility 3000:public -c $CODESPACE_NAME && gh codespace ports visibility 4567:public -c $CODESPACE_NAME",
 
   "forwardPorts": [3000, 4567, 2000],
 
