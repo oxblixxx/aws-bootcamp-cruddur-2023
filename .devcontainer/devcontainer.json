@@ -32,8 +32,8 @@
       }
     }
   },
-
-  "postCreateCommand": "sudo rm -f /etc/apt/sources.list.d/pgdg.list && sudo apt-get update && sudo apt-get install -y gnupg && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgresql-archive-keyring.gpg >/dev/null && echo 'deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null && sudo apt-get update && sudo apt-get install -y postgresql-client-13 libpq-dev && npm install -g commitizen cz-gitmoji-changelog cz-conventional-changelog && echo '{\"path\": \"cz-gitmoji-changelog\"}' > ~/.czrc && chmod +x .devcontainer/setup.sh && source .devcontainer/setup.sh",
+  
+  "postCreateCommand": "sudo rm -f /etc/apt/sources.list.d/pgdg.list && sudo apt-get update && sudo apt-get install -y gnupg && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgresql-archive-keyring.gpg >/dev/null && echo 'deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null && sudo apt-get update && sudo apt-get install -y postgresql-client-13 libpq-dev && npm install -g commitizen cz-gitmoji-changelog cz-conventional-changelog && echo '{\"path\": \"cz-gitmoji-changelog\"}' > ~/.czrc && chmod +x .devcontainer/setup.sh && cp .env.example .env && ",
 
   "postAttachCommand": "gh codespace ports visibility 3000:public -c $CODESPACE_NAME && gh codespace ports visibility 4567:public -c $CODESPACE_NAME",
 
