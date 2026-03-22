@@ -11,7 +11,7 @@ if [ "$1" == "prod" ]; then
     URL=$PROD_CONNECTION_URL
 else 
     echo "using development db"
-    URL=$LOCAL_CONNECTION_URL
+    URL=$CONNECTION_URL
 fi
 
 # Run psql with connection string and schema file

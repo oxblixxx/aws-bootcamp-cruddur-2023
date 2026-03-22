@@ -1,7 +1,7 @@
 #! /usr/bin/bash 
 # Resolve the absolute path to the schema.sql file so it can be reliably referenced,
 # regardless of the current working directory.
-schema_path="$(realpath ../..)/db/schema.sql"
+schema_path="$(realpath ../..)/db/seed.sql"
 
 echo $schema_path
 echo "db-schema-load"
@@ -11,7 +11,7 @@ if [ "$1" == "prod" ]; then
     URL=$PROD_CONNECTION_URL
 else 
     echo "using development db"
-    URL=$LOCAL_CONNECTION_URL
+    URL=$CONNECTION_URL
 fi
 
 # Run psql with connection string and schema file

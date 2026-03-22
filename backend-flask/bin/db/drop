@@ -8,7 +8,7 @@ printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
 
 DB_NAME="cruddur"
 
-NO_DB_CONNECTION_URL=$(echo "$LOCAL_CONNECTION_URL" | sed "s|/$DB_NAME||")
+NO_DB_CONNECTION_URL=$(echo "$CONNECTION_URL" | sed "s|/$DB_NAME||")
 
 echo "Using connection: $NO_DB_CONNECTION_URL"
 
