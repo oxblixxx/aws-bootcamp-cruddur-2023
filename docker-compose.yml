@@ -2,9 +2,12 @@ version: "3.8"
 services:
   backend-flask:
     environment:
-      CONNECTION_URL: "${LOCAL_CONNECTION_URL}" 
-      FRONTEND_URL: "https://3000-${CODESPACE_NAME}-4567.preview.app.github.dev"
-      BACKEND_URL: "https://4567-${CODESPACE_NAME}-4567.preview.app.github.dev"
+      AWS_ENDPOINT_URL: "http://dynamodb-local:8000"
+      CONNECTION_URL: "${CONNECTION_URL}" 
+      #FRONTEND_URL: "https://${CODESPACE_NAME}-3000.app.github.dev"
+      FRONTEND_URL: "https://expert-space-engine-q5vjg9ggpprf4wgq-3000.app.github.dev"
+      #BACKEND_URL: "https://${CODESPACE_NAME}-4567.app.github.dev"
+      BACKEND_URL: "https://expert-space-engine-q5vjg9ggpprf4wgq-4567.app.github.dev"
       # HONEYCOMB
       # SERVICE NAME AS TO BE UNIQUE AS PER DIFFERENT SERVICES.
       OTEL_SERVICE_NAME: 'backend-flask'
@@ -16,8 +19,13 @@ services:
       AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION}"
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      FLASK_ENV: development
+      FLASK_DEBUG: "1"
       #ROLLBAR_ACCESS_TOKEN: "${ROLLBAR_ACCESS_TOKEN}"      
-    image: cruddur-backend:v1
+      AWS_COGNITO_USER_POOL_ID: "us-east-1_4RnA4Ed2q"
+      AWS_COGNITO_USER_POOL_CLIENT_ID: "6nscku3k5ij847p4drsfis74ge"    
+    build: ./backend-flask
+    #image: cruddur-backend:v1
     ports:
       - "4567:4567"
     volumes:
@@ -29,15 +37,19 @@ services:
     #  retries: 3    aa
   frontend-react-js:
     environment:
-      REACT_APP_BACKEND_URL: "https://4567-${CODESPACE_NAME}-4567.preview.app.github.dev"
+      #REACT_APP_BACKEND_URL: "https://${CODESPACE_NAME}-4567.app.github.dev"
+      REACT_APP_BACKEND_URL: "https://expert-space-engine-q5vjg9ggpprf4wgq-4567.app.github.dev"
       REACT_APP_AWS_PROJECT_REGION: "${AWS_DEFAULT_REGION}"
       REACT_APP_AWS_COGNITO_REGION: "${AWS_DEFAULT_REGION}"
       REACT_APP_AWS_USER_POOLS_ID: "${REACT_APP_AWS_USER_POOLS_ID}" 
       REACT_APP_CLIENT_ID: "${REACT_APP_CLIENT_ID}"     
       #REACT_APP_WEB_CLIENT_SECRET: "${REACT_APP_WEB_CLIENT_SECRET}" 
-    image: cruddur-frontend:v1
+    #image: cruddur-frontend:v1
+    build: ./frontend-react-js
+    
     ports:
       - "3000:3000"
+    
     #volumes:
     #  - ./frontend-react-js:/frontend-react-js
     #depends_on:
