@@ -10,6 +10,7 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.abspath(os.path.join(current_path, '..', '..'))
 sys.path.append(parent_path)
 from lib.db import db
+print("DB URL:", os.getenv("CONNECTION_URL"))
 
 attrs = {
   'endpoint_url': 'http://localhost:8000'
@@ -34,11 +35,13 @@ def get_user_uuids():
         )
   """
   users = db.query_array_json(sql,{
-    'my_handle':  'andrewbrown',
-    'other_handle': 'bayko'
+### CHANGE THE HANDLE TO 2 USERNAMES THAT EXISTS IN THE COGNITO USER POOL
+    'my_handle':  'oxblixxxx',
+    'other_handle': 'bigtade'
   })
-  my_user    = next((item for item in users if item["handle"] == 'andrewbrown'), None)
-  other_user = next((item for item in users if item["handle"] == 'bayko'), None)
+### CHANGE THE HANDLE TO 2 USERNAMES THAT EXISTS IN THE COGNITO USER POOL ALSO
+  my_user    = next((item for item in users if item["handle"] == 'oxblixxxx'), None)
+  other_user = next((item for item in users if item["handle"] == 'bigtade'), None)
   results = {
     'my_user': my_user,
     'other_user': other_user
@@ -84,7 +87,7 @@ def create_message(client,message_group_uuid, created_at, message, my_user_uuid,
   # print the response
   print(response)
 
-message_group_uuid = "5ae290ed-55d1-47a0-bc6d-fe2bc2700399" 
+message_group_uuid = "e4187488-d031-70c2-95b1-1c460629bb48" 
 now = datetime.now(timezone.utc).astimezone()
 users = get_user_uuids()
 
