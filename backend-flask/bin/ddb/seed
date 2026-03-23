@@ -10,7 +10,6 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.abspath(os.path.join(current_path, '..', '..'))
 sys.path.append(parent_path)
 from lib.db import db
-print("DB URL:", os.getenv("CONNECTION_URL"))
 
 attrs = {
   'endpoint_url': 'http://localhost:8000'
@@ -86,7 +85,7 @@ def create_message(client,message_group_uuid, created_at, message, my_user_uuid,
   )
   # print the response
   print(response)
-
+### CHANGE TO USER COGNITO (SUB) UUID
 message_group_uuid = "e4187488-d031-70c2-95b1-1c460629bb48" 
 now = datetime.now(timezone.utc).astimezone()
 users = get_user_uuids()
