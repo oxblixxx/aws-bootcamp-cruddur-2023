@@ -88,6 +88,52 @@ Utility scripts were created to:
   - Update Cognito user ID:
   - update_cognito_user_id
 
+HERE IS DETAILED STEPS TO TEST THE SETUP LOCALLY.
+in week 4, some users signed up on the cruddur app, navigate to [seed.sql](backend-flask/db/seed.sql) and simply replace the values with corresponding details from cognito to be seeded in the DB. Run this [image-build](.devcontainer/image_build.sh) script to build both the frontend and backend image. Check the compose file to confirm `AWS_ENDPOINT_URL` is set, this is needed for local DYNAMODB connection. Before bringing up the docker compose file, split the terminal screen, then navigate to [db-utility-scripts](backend-flask/bin/db). Ensure the environment variables for cognito are added in .env, CONNECTION_URL is set, and AWS_SECRETS. Bring up the docker compose file on the first screen, on the second screen, execute the `./load` script, ensure it executable, this creates the `cruddur` database so that the backend doesn't exit. This should be succesful. Proceed to make the ports public, for both frontend and backend, there should show seeded data on the login page. Navigate to [DDB-SCRIPTS](backend-flask/bin/ddb), execute the `schema-load` and the `seed` scripts. This should create a user conversation in the Messages. This confirms everything works locally and we can proceed to production, bring down the compose file. Comment out the `AWS_ENDPOINT_URL`, then bring up the compose file. Navigate to DDB-SCRIPTS, then run `./schema-seed prod` this authenticates with AWS and creates a DYNAMO DB TABLE. Run the seed script. 
 
+⚡ Git & Commit Workflow Fix
 
+Fixed Commitizen configuration:
 
+rm -f ~/.czrc
+cat > ~/.czrc <<'EOF'
+{"path": "cz-gitmoji-changelog"}
+EOF
+🔄 DynamoDB Streams & Lambda
+1. Enable Streams
+Set DynamoDB Stream to:
+NEW_IMAGE
+2. Create Lambda Function
+
+Using AWS Lambda:
+
+Runtime: Python
+Permissions: AWSLambdaInvocation-DynamoDB
+3. Configure Trigger
+Connect DynamoDB Stream to Lambda
+Settings:
+Batch size: 1
+Trigger: Enabled
+🧪 Development Workflow Improvements
+Codespaces Automation
+
+Added startup steps:
+
+cd backend
+pip install -r requirements.txt
+Reusable Setup Enhancements
+Automated AWS credential injection
+Standardized environment setup
+Reduced onboarding friction
+✅ Summary of Achievements
+Integrated DynamoDB with structured scripts
+Implemented access patterns for scalability
+Added Cognito user management automation
+Enabled DynamoDB Streams + Lambda triggers
+Improved developer workflow with Codespaces
+Refactored backend for better maintainability
+🚀 Next Steps (Optional Ideas)
+Add logging/monitoring (CloudWatch)
+Implement retries & error handling in Lambda
+Add API layer for DynamoDB access
+Introduce CI/CD pipeline for deployments
