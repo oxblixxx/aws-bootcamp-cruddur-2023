@@ -13,8 +13,8 @@ class UserActivities:
     else:
       now = datetime.now()
       results = [{
-        'uuid': '248959df-3079-4947-b847-9e0892d1bab4',
-        'handle':  'Andrew Brown',
+        'uuid': 'e4187488-d031-70c2-95b1-1c460629bb48',
+        'handle':  'Pelumi Mustapha',
         'message': 'Cloud is fun!',
         'created_at': (now - timedelta(days=1)).isoformat(),
         'expires_at': (now + timedelta(days=31)).isoformat()
