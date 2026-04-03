@@ -89,9 +89,31 @@ Utility scripts were created to:
   - update_cognito_user_id
 
 ### Local Setup, Seeding, and DynamoDB Integration
-During Week 4, some users signed up on the Cruddur app. To reflect these users in the local database, follow the steps below:
+####  1. Build Application Images
+From the project root directory run the image build script:
 
-#### 1. Seed Initial Users into PostgreSQL
+```sh
+source .devcontainer/image_build.sh
+```
+This builds both the frontend and backend Docker images.
+
+#### 2. Verify Environment Configuration
+
+Open the docker-compose.yml file and confirm:
+
+```sh
+AWS_ENDPOINT_URL
+```
+is set.
+
+This is required for connecting to local DynamoDB. Also ensure the following are correctly set in your .env file:
+
+- Cognito environment variables
+- CONNECTION_URL
+- AWS_SECRETS
+
+#### 3. Check the seeded data
+During Week 4, some users signed up on the Cruddur app. To reflect these users in the local database, follow the steps below:
 
 Navigate to:
 
@@ -102,81 +124,191 @@ backend-flask/db/seed.sql
 >Replace the placeholder values with the corresponding user details from Cognito.
 
 This ensures that authenticated users are properly represented in the database.
-2. Build Application Images
 
-Run the image build script:
 
-.devcontainer/image_build.sh
-This builds both the frontend and backend Docker images.
-3. Verify Environment Configuration
-
-Open the docker-compose.yml file and confirm:
-
-AWS_ENDPOINT_URL
-
-is set.
-
-This is required for connecting to local DynamoDB.
-Also ensure the following are correctly set in your .env file:
-Cognito environment variables
-CONNECTION_URL
-AWS_SECRETS
-4. Initialize the Database
-
+#### 4. Bring up the project
 Before starting Docker:
 
 Split your terminal into two panes
 
 In the second terminal:
 
+```sh
 cd backend-flask/bin/db
-chmod +x load
-./load
-This script creates the cruddur database.
-It prevents the backend from failing due to a missing database.
+chmod +x .
+```
+
+This makes all the file executable, as they are scripts.
 
 In the first terminal:
 
+```sh
 docker compose up
-5. Verify Local Setup
-Expose both frontend and backend ports.
-Open the application in your browser.
-You should see the seeded users on the login page, confirming successful setup.
-6. Set Up Local DynamoDB
+```
+
+Return to the second pane
+
+```sh
+./load
+```
+
+This script creates the cruddur database.
+It prevents the backend from failing due to a missing database.
+
+#### 5. PORT VISIBILITY
+Open the application in your browser. Make both frontend and backend visibility public. 
+You should see the seeded users on the login page
+![seeded_data](_docs/assets/week-5/seeded_data_and_user.png)
+
+
+#### 6. Set Up Local DynamoDB
+
+Navigate to:
+
+```sh
+backend-flask/bin/ddb
+```
+
+Run:
+
+```sh
+./schema-load
+./seed
+```
+After running the seed script, a dumpl load of json data should show on the screen.
+
+This:
+- Creates DynamoDB tables locally
+- Seeds initial data (e.g., user conversations/messages)
+- Successful execution confirms that local DynamoDB integration is working.
+
+Proceed to the frontend URL, log in, navigate to messages and confirm there is a seeded message conversation.
+![seeded_conversation](_docs/assets/week-5/seeded_conversation.png)
+
+
+#### 7. CREATE NEW MESSAGE
+
+
+#### 7. Transition to Production Setup
+To send a message to a new user, hit /messages/new/<username> to initiate chat with a new user.
+![create_new_message](_docs/assets/week-5/create_new_message.png)
+
+### Production Setup, Seeding, and DynamoDB Integration
+1. Switch to Production DynamoDB
+
+Bring down the current Docker environment:
+
+docker compose down
+
+Open docker-compose.yaml and comment out:
+
+AWS_ENDPOINT_URL
+
+Bring the environment back up:
+
+docker compose up
+
+⚠️ Note:
+You are still using local PostgreSQL.
+Only DynamoDB is now connected to production (AWS).
+
+2. Create DynamoDB Table in AWS
 
 Navigate to:
 
 backend-flask/bin/ddb
 
-Run:
+Make the script executable and run:
 
-./schema-load
-./seed
-This:
-Creates DynamoDB tables locally
-Seeds initial data (e.g., user conversations/messages)
-Successful execution confirms that local DynamoDB integration is working.
-7. Transition to Production Setup
-
-Stop the local environment:
-
-docker compose down
-
-In docker-compose.yml, comment out:
-
-AWS_ENDPOINT_URL
-This ensures the app connects to real AWS DynamoDB instead of local.
-
-Restart the application:
-
-docker compose up
-8. Deploy DynamoDB to AWS
-
-Navigate again to:
-
-backend-flask/bin/ddb
+chmod +x schema-load
+./schema-load prod
+This will:
+Authenticate with AWS
+Create the DynamoDB table in your AWS account
+3. Seed Production DynamoDB
 
 Run:
+
+./seed prod
+This populates the table with initial data (e.g., messages/conversations).
+4. Enable DynamoDB Streams
+In the AWS Console:
+Go to DynamoDB
+Select your table
+
+Navigate to:
+
+Exports and streams → DynamoDB stream details
+
+Enable streams and choose:
+
+New image
+This allows capturing newly written items for downstream processing.
+5. Configure VPC Endpoint for DynamoDB
+
+For DynamoDB to work with Lambda inside a VPC:
+
+Go to:
+
+VPC → PrivateLink and Lattice → Endpoints
+Create a new endpoint:
+Type: AWS services
+Service: DynamoDB
+Endpoint type: Gateway
+Select:
+Your VPC
+Appropriate route tables
+Allow full access
+Create the endpoint
+6. Create Lambda Function
+Navigate to AWS Lambda (AWS Lambda)
+Create a function:
+Author from scratch
+Runtime: Python 3.10
+Architecture: Any
+Use default execution role (temporary)
+Under Advanced settings:
+Attach the function to your VPC
+Select:
+Subnets
+Security group
+7. Deploy Lambda Code
+
+Locate:
+
+aws/lambda/cruddur-messaging-stream.py
+Copy the contents into the Lambda inline editor
+Click Deploy
+8. Configure IAM Permissions
+
+Go to:
+
+Lambda → Configuration → Execution Role
+Click the attached role and:
+Create Inline Policy
+Select JSON
+
+Paste:
+
+aws/policy/cruddur-message-stream-policy.json
+Save with a meaningful name
+Attach AWS managed policy:
+AWSLambdaInvocation-DynamoDB
+9. Add DynamoDB Trigger
+In Lambda:
+Go to Triggers
+Add trigger:
+Source: DynamoDB
+Select your table
+Batch size: 1 (for now)
+This connects DynamoDB Streams to Lambda.
+10. Test the Flow
+Go to the frontend app
+Send a message
+Then verify logs in Amazon CloudWatch:
+Navigate to CloudWatch Logs
+Check your Lambda log group
+Confirm the stream is triggering the Lambda function
 
 ./schema-seed prod
 ./seed
@@ -233,3 +365,9 @@ Add logging/monitoring (CloudWatch)
 Implement retries & error handling in Lambda
 Add API layer for DynamoDB access
 Introduce CI/CD pipeline for deployments
+
+
+
+
+
+An error occurred when creating the trigger: Cannot access stream arn:aws:dynamodb:us-east-1:193654356005:table/cruddur-messages/stream/2026-03-24T17:01:03.860. Please ensure the role can perform the GetRecords, GetShardIterator, DescribeStream, and ListStreams Actions on your stream in IAM.

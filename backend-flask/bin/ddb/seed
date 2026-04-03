@@ -86,7 +86,8 @@ def create_message(client,message_group_uuid, created_at, message, my_user_uuid,
   # print the response
   print(response)
 ### CHANGE TO USER COGNITO (SUB) UUID
-message_group_uuid = "e4187488-d031-70c2-95b1-1c460629bb48" 
+message_group_uuid = str(uuid.uuid4())
+#message_group_uuid = "e4187488-d031-70c2-95b1-1c460629bb48" 
 now = datetime.now(timezone.utc).astimezone()
 users = get_user_uuids()
 

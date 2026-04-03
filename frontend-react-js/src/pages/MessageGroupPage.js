@@ -57,7 +57,6 @@ export default function MessageGroupPage() {
   };  
 
   React.useEffect(()=>{
-    //prevents double call
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
 
@@ -65,15 +64,28 @@ export default function MessageGroupPage() {
     loadMessageGroupData();
     checkAuth(setUser);
   }, [])
+
+  // ✅ FIND CURRENT GROUP
+  const currentGroup = messageGroups.find(
+    group => group.message_group_uuid === params.message_group_uuid
+  );
+
   return (
     <article>
       <DesktopNavigation user={user} active={'home'} setPopped={setPopped} />
+      
       <section className='message_groups'>
         <MessageGroupFeed message_groups={messageGroups} />
       </section>
+
       <div className='content messages'>
         <MessagesFeed messages={messages} />
-        <MessagesForm setMessages={setMessages} />
+
+        {/* ✅ PASS RECEIVER HANDLE */}
+        <MessagesForm 
+          setMessages={setMessages} 
+          userReceiverHandle={currentGroup ? currentGroup.user_handle : ''}
+        />
       </div>
     </article>
   );
