@@ -5,9 +5,11 @@ services:
       #AWS_ENDPOINT_URL: "http://dynamodb-local:8000"
       CONNECTION_URL: "${CONNECTION_URL}" 
       #FRONTEND_URL: "https://${CODESPACE_NAME}-3000.app.github.dev"
-      FRONTEND_URL: "https://ubiquitous-carnival-r57qvrvv65jfw74v-3000.app.github.dev"
+      FRONTEND_URL: "http://147.93.28.195:3000"
+      #FRONTEND_URL: "https://ubiquitous-carnival-r57qvrvv65jfw74v-3000.app.github.dev"
       #BACKEND_URL: "https://${CODESPACE_NAME}-4567.app.github.dev"
-      BACKEND_URL: "https://ubiquitous-carnival-r57qvrvv65jfw74v-4567.app.github.dev"
+      BACKEND_URL: "http://147.93.28.195:4567"
+      #BACKEND_URL: "https://ubiquitous-carnival-r57qvrvv65jfw74v-4567.app.github.dev"
       # HONEYCOMB
       # SERVICE NAME AS TO BE UNIQUE AS PER DIFFERENT SERVICES.
       OTEL_SERVICE_NAME: 'backend-flask'
@@ -24,8 +26,8 @@ services:
       #ROLLBAR_ACCESS_TOKEN: "${ROLLBAR_ACCESS_TOKEN}"      
       AWS_COGNITO_USER_POOL_ID: "us-east-1_4RnA4Ed2q"
       AWS_COGNITO_USER_POOL_CLIENT_ID: "6nscku3k5ij847p4drsfis74ge"    
-    build: ./backend-flask
-    #image: cruddur-backend:v1
+    #build: ./backend-flask
+    image: 193654356005.dkr.ecr.us-east-1.amazonaws.com/backend-flask:latest
     ports:
       - "4567:4567"
     volumes:
@@ -38,7 +40,8 @@ services:
   frontend-react-js:
     environment:
       #REACT_APP_BACKEND_URL: "https://${CODESPACE_NAME}-4567.app.github.dev"
-      REACT_APP_BACKEND_URL: "https://ubiquitous-carnival-r57qvrvv65jfw74v-4567.app.github.dev"
+      REACT_APP_BACKEND_URL: "http://localhost:4567"
+      #REACT_APP_BACKEND_URL: "https://ubiquitous-carnival-r57qvrvv65jfw74v-4567.app.github.dev"
       REACT_APP_AWS_PROJECT_REGION: "${AWS_DEFAULT_REGION}"
       REACT_APP_AWS_COGNITO_REGION: "${AWS_DEFAULT_REGION}"
       REACT_APP_AWS_USER_POOLS_ID: "${REACT_APP_AWS_USER_POOLS_ID}" 

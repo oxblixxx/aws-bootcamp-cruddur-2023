@@ -6,6 +6,8 @@ In the prior week, I included Postgresql database image in our docker-compose.ym
 
 configure aws credentials then open the terminal, copy and and paste the below code, stopping the database on AWS console ensentially stops it for 7days of which it starts automatically.
 
+https://docs.aws.amazon.com/cli/latest/reference/rds/
+
 ```sql
 aws rds create-db-instance \
   --db-instance-identifier cruddur-db-instance \
