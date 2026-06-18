@@ -71,7 +71,7 @@
       ],
 
       "healthCheck": {
-        "command": ["CMD-SHELL", "curl -f http://localhost:4567/ || exit 1"],
+        "command": ["CMD-SHELL", "python /backend-flask/bin/flask/health-check" ],
         "interval": 30,
         "timeout": 5,
         "retries": 3,
