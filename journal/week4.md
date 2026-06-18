@@ -8,12 +8,13 @@ configure aws credentials then open the terminal, copy and and paste the below c
 
 https://docs.aws.amazon.com/cli/latest/reference/rds/
 
+
 ```sql
 aws rds create-db-instance \
   --db-instance-identifier cruddur-db-instance \
   --db-instance-class db.t3.micro \
   --engine postgres \
-  --engine-version  14.17 \
+  --engine-version  14.19 \
   --master-username oxblixxx \
   --master-user-password wearewinning \
   --allocated-storage 20 \
@@ -29,6 +30,13 @@ aws rds create-db-instance \
   --performance-insights-retention-period 7 \
   --no-deletion-protection
 ```
+
+Then you can set the CONNECTION URL with this format.
+
+```sh
+postgresql://username:password@hostname:5432/database
+```
+
 Check the docker logs to see if postgresql is running. That's a must! Run the command below to login into the local db and the password is "password" as the name implies :)
 
 ```sql

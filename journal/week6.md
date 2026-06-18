@@ -167,7 +167,7 @@ aws iam attach-role-policy \
   --role-name CruddurEcsTaskRole \
   --policy-arn arn:aws:iam::ACCOUNT_ID:policy/CruddurSSMAccess
 
-aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/CloudWatchFullAccess --role-name CruddurTaskRole
+aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/CloudWatchFullAccess --role-name ServiceExecutionRole
 
 Then create a cluster
 
@@ -180,8 +180,11 @@ Then create a cluster
 
 Create parameter, this is cheaper compared to AWS KMS. Also ensure to set region in `aws configure` and to export env `export AWS_ACCESS_KEY_ID`.
 
-https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data.html
-https://docs.aws.amazon.com/AmazonECS/latest/developerguide/secrets-envvar-ssm-paramstore.html
+
+
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data.html
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/secrets-envvar-ssm-paramstore.html
+# https://docs.aws.amazon.com/cli/latest/reference/ssm/put-parameter.html
 
 ```sh
 aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/AWS_ACCESS_KEY_ID" --value $AWS_ACCESS_KEY_ID
@@ -192,10 +195,24 @@ aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/OTEL_
 ```
 
 
+Now, to create a service, there needs to be task a defined already! Here is to create it.
 
 aws ecs register-task-definition --cli-input-json file://aws/task-definitions/backend-flask.json
 
 
+Then to create a service, it can be created over the console, but the console lacks a lot of features. 
+
+```sh
+aws ecs create-service --cli-input-json file://aws/json/service-backend-flask.json
+```
+
+Check the health status of the task, then allow 4567 in the security group for cruddur-service, then also allow 5432 from the cruddur-sg group in the default security group
+
+export DEFAULT_VPC_ID=$(aws ec2 describe-vpcs \
+--filters "Name=isDefault, Values=true" \
+--query "Vpcs[0].VpcId" \
+--output text)
+echo $DEFAULT_VPC_ID
 
 
 export DEFAULT_SUBNET_IDS=$(aws ec2 describe-subnets  \
@@ -206,4 +223,20 @@ echo $DEFAULT_SUBNET_IDS
 
 
 
+export CRUD_SERVICE_SG=$(aws ec2 describe-security-groups \
+  --filters Name=group-name,Values=crud-srv-sg \
+  --query 'SecurityGroups[*].GroupId' \
+  --output text)
+echo $CRUD_SERVICE_SG
 
+
+ADD GETAUTHORIZATION, ECR POLICY IN EXECUTIONPOLICY
+
+service backend-flask-service-eqwx9jnl was unable to place a task. Reason: ResourceInitializationError: unable to pull secrets or registry auth: execution resource retrieval failed: unable to retrieve ecr registry auth: service call has been retried 1 time(s): operation error ECR: GetAuthorizationToken, https response error StatusCode: 400, RequestID: 415e6826-9d7a-4ef1-8eea-8eec9105a1a8, api error AccessDeniedException: User: arn:aws:sts::193654356005:assumed-role/CruddurServiceExecutionRole/bc88e9b6acd947589d99b68067f8de59 is not authorized to perform: ecr:GetAuthorizationToken on resource: * because no identity-based policy allows the ecr:GetAuthorizationToken action.
+
+
+
+Got this error while trying to use the `aws ecs execute-command`. The issue is that the feature can not be enabled via console, so creating the service via CLI is the fix
+```sh
+aws: [ERROR]: An error occurred (InvalidParameterException) when calling the ExecuteCommand operation: The execute command failed because execute command was not enabled when the task was run or the execute command agent isn't running. Wait and try again or run a new task with execute command enabled and try again.
+```
