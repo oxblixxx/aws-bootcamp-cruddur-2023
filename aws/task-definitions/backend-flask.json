@@ -20,9 +20,9 @@
       "name": "backend-flask",
       "image": "193654356005.dkr.ecr.us-east-1.amazonaws.com/backend-flask:latest",
       "essential": true,
-
       "portMappings": [
         {
+          "name": "backend-flask",
           "containerPort": 4567,
           "protocol": "tcp"
         }
