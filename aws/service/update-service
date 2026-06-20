@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+
+CLUSTER_NAME="cruddur"
+SERVICE_NAME="backend-flask"
+LB_CONFIG_FILE="aws/service/loadbalancer.json"
+
+echo "======================================"
+echo "Checking ECS Service"
+echo "======================================"
+
+SERVICE_EXISTS=$(aws ecs describe-services \
+  --cluster "$CLUSTER_NAME" \
+  --services "$SERVICE_NAME" \
+  --query 'services[0].serviceName' \
+  --output text 2>/dev/null || true)
+
+if [[ -z "$SERVICE_EXISTS" || "$SERVICE_EXISTS" == "None" ]]; then
+  echo "ERROR: ECS service does not exist: $SERVICE_NAME"
+  exit 1
+fi
+
+echo "Service found: $SERVICE_EXISTS"
+
+echo "======================================"
+echo "Updating ECS Service (Force Deployment)"
+echo "======================================"
+
+aws ecs update-service \
+  --cluster "$CLUSTER_NAME" \
+  --service "$SERVICE_NAME" \
+  --load-balancers file://"$LB_CONFIG_FILE" \
+  --force-new-deployment
+
+echo "======================================"
+echo "Deployment triggered successfully ✔"
+echo "======================================"
