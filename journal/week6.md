@@ -240,3 +240,15 @@ Got this error while trying to use the `aws ecs execute-command`. The issue is t
 ```sh
 aws: [ERROR]: An error occurred (InvalidParameterException) when calling the ExecuteCommand operation: The execute command failed because execute command was not enabled when the task was run or the execute command agent isn't running. Wait and try again or run a new task with execute command enabled and try again.
 ```
+
+
+```
+portName(backend-flask) does not refer to any named PortMapping in the container definitions
+```
+
+Got this error, the error is from the task definition, I didn't map "containerPort" 4567, to a name"
+ADDED BELOW TO FIX IT
+```
+          "name": "backend-flask",
+
+``
