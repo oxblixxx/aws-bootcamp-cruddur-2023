@@ -1,0 +1,7 @@
+[
+  {
+    "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:193654356005:targetgroup/CRUDDUR-BACKEND-FLASK-TG/0ddcd8609adbcfc7",
+    "containerName": "backend-flask",
+    "containerPort": 4567
+  }
+]
