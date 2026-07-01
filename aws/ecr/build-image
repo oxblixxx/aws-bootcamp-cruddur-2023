@@ -1,0 +1,72 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Get project root (2 levels up from aws/ecr)
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+AWS_REGION="us-east-1"
+AWS_ACCOUNT_ID="193654356005"
+IMAGE_TAG="v1"
+
+SERVICE="${1:-}"
+
+if [ -z "$SERVICE" ]; then
+    echo "Usage: $0 <backend-flask|frontend-react>"
+    exit 1
+fi
+
+# Determine build context
+case "$SERVICE" in
+    backend-flask)
+        BUILD_CONTEXT="$ROOT_DIR/backend-flask"
+        ;;
+    frontend-react)
+        BUILD_CONTEXT="$ROOT_DIR/frontend-react-js"
+        ;;
+    *)
+        echo "Unknown service: $SERVICE"
+        echo "Valid services:"
+        echo "  - backend-flask"
+        echo "  - frontend-react"
+        exit 1
+        ;;
+esac
+
+IMAGE_NAME="$SERVICE"
+ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+IMAGE_URI="${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+echo "========================================"
+echo "Service      : $SERVICE"
+echo "Build Context: $BUILD_CONTEXT"
+echo "Image URI    : $IMAGE_URI"
+echo "========================================"
+
+# Login to Amazon ECR
+echo "Logging into ECR..."
+aws ecr get-login-password --region "$AWS_REGION" | \
+docker login \
+    --username AWS \
+    --password-stdin \
+    "$ECR_REGISTRY"
+
+# Build the Docker image
+echo "Building image..."
+docker build \
+    -t "$IMAGE_NAME:$IMAGE_TAG" \
+    "$BUILD_CONTEXT"
+
+# Tag the image for ECR
+echo "Tagging image..."
+docker tag \
+    "$IMAGE_NAME:$IMAGE_TAG" \
+    "$IMAGE_URI"
+
+# Push the image
+echo "Pushing image..."
+docker push "$IMAGE_URI"
+
+echo
+echo "✅ Successfully pushed:"
+echo "$IMAGE_URI"
