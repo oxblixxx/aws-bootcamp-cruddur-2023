@@ -1,21 +1,31 @@
 {
-  "family": "frontend-react-js",
+  "family": "frontend-react",
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+
+  "cpu": "256",
+  "memory": "512",
+
   "executionRoleArn": "arn:aws:iam::193654356005:role/CruddurServiceExecutionRole",
   "taskRoleArn": "arn:aws:iam::193654356005:role/CruddurTaskRole",
-  "networkMode": "awsvpc",
+
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+
   "containerDefinitions": [
     {
-      "name": "frontend-react-js",
-      "image": "193654356005.dkr.ecr.us-east-1.amazonaws.com/frontend-react:v1",
+      "name": "frontend-react",
+      "image": "193654356005.dkr.ecr.us-east-1.amazonaws.com/frontend-react:v5",
       "cpu": 256,
-      "memory": 256,
+      "memory": 512,
       "essential": true,
       "portMappings": [
         {
-          "name": "frontend-react-js",
+          "name": "frontend-react",
           "containerPort": 3000,
-          "protocol": "tcp", 
-          "appProtocol": "http"
+          "protocol": "tcp"
         }
       ],
 
