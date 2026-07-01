@@ -191,7 +191,7 @@ else
 fi
 
 OUTPUT_FILE="deployment-info.txt"
-
+rm -rf $OUTPUT_FILE
 {
     echo "======================================"
     echo "RESULTS"
