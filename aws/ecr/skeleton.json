@@ -1,0 +1,24 @@
+{
+    "registryId": "",
+    "repositoryName": "",
+    "tags": [
+        {
+            "Key": "",
+            "Value": ""
+        }
+    ],
+    "imageTagMutability": "MUTABLE",
+    "imageTagMutabilityExclusionFilters": [
+        {
+            "filterType": "WILDCARD",
+            "filter": ""
+        }
+    ],
+    "imageScanningConfiguration": {
+        "scanOnPush": true
+    },
+    "encryptionConfiguration": {
+        "encryptionType": "AES256",
+        "kmsKey": ""
+    }
+}
