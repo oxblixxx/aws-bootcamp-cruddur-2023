@@ -1,4 +1,4 @@
-FROM node:16.18
+FROM 193654356005.dkr.ecr.us-east-1.amazonaws.com/cruddur-node:latest
 
 # Set working directory first
 WORKDIR /frontend-react-js
