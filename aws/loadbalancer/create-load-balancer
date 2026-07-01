@@ -190,14 +190,23 @@ else
   echo "Listener already exists"
 fi
 
-echo "======================================"
-echo "RESULTS"
-echo "======================================"
+OUTPUT_FILE="deployment-info.txt"
 
-echo "ALB ARN      : $ALB_ARN"
-echo "ALB DNS      : $ALB_DNS"
-echo "BACKEND TG ARN       : $BACKEND_TG_ARN"
-echo "FRONTEND TG ARN       : $FRONTEND_TG_ARN"
+{
+    echo "======================================"
+    echo "RESULTS"
+    echo "======================================"
+
+    echo "ALB ARN              : $ALB_ARN"
+    echo "ALB DNS              : $ALB_DNS"
+    echo "BACKEND TG ARN       : $BACKEND_TG_ARN"
+    echo "FRONTEND TG ARN      : $FRONTEND_TG_ARN"
+} | tee -a "$OUTPUT_FILE"
+
+# echo "ALB ARN      : $ALB_ARN" 
+# echo "ALB DNS      : $ALB_DNS"
+# echo "BACKEND TG ARN       : $BACKEND_TG_ARN"
+# echo "FRONTEND TG ARN       : $FRONTEND_TG_ARN"
 
 
 echo "DONE"
