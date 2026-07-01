@@ -4,7 +4,7 @@ set -e
 
 CLUSTER_NAME="cruddur"
 SERVICE_NAME="backend-flask"
-LB_CONFIG_FILE="aws/service/loadbalancer.json"
+LB_CONFIG_FILE="./backend-loadbalancer-arn.json"
 
 echo "======================================"
 echo "Checking ECS Service"
