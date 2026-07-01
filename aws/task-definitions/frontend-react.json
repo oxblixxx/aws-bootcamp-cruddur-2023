@@ -6,7 +6,7 @@
   "containerDefinitions": [
     {
       "name": "frontend-react-js",
-      "image": "BACKEND_FLASK_IMAGE_URL",
+      "image": "193654356005.dkr.ecr.us-east-1.amazonaws.com/frontend-react:v1",
       "cpu": 256,
       "memory": 256,
       "essential": true,
