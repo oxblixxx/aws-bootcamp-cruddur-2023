@@ -4,8 +4,8 @@
 set -e
 
 # Get repo root (2 levels up from backend-flask/bin/task)
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+echo ${ROOT_DIR}
 SERVICE=$1
 
 if [ -z "$SERVICE" ]; then
@@ -13,7 +13,7 @@ if [ -z "$SERVICE" ]; then
   exit 1
 fi
 
-TASK_FILE="$ROOT_DIR/aws/task-definitions/${SERVICE}.json"
+TASK_FILE="$ROOT_DIR/aws/ecs/task-definitions/${SERVICE}.json"
 
 if [ ! -f "$TASK_FILE" ]; then
   echo "Task definition not found: $TASK_FILE"
