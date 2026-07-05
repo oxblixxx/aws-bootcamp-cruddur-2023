@@ -290,7 +290,19 @@ docker push $ECR_NODE_URL:node:16.18
 ```
 
 ### Frontend React Image
-I updated the base image in my `Dockerfile` to point to my new ECR node repository, created the frontend repository, built the image, and pushed it.
+The `npm start` command is intended for development. It launches the development server, which provides features such as hot module replacement (HMR), source maps, and live reloading. These features are useful during development but introduce unnecessary overhead and are not designed for production workloads.
+
+Instead, the application is first built into optimized static assets using:
+
+```bash
+npm run build
+```
+
+The generated `dist/` directory is then copied into a webserver image, to serve the static files directly. 
+
+Unlike the backend service, the frontend does not require sensitive information such as API keys or database credentials. Therefore, I passed the required configuration values into the Docker image during the build process using Docker's `ARG` and `ENV` instructions.
+
+> **Note:** Before building the Docker image, ensure that all required environment variables have already been exported in your shell. These exported variables are referenced by the `docker build` command and passed into the image as build arguments.
 
 ```bash
 aws ecr create-repository \
@@ -299,11 +311,27 @@ aws ecr create-repository \
 
 export ECR_BACKEND_REACT_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/frontend-react"
 
-docker build -t frontend-react .
+```sh
+cd frontend-react
+cp Dockerfile Dockerfile.prod
+```
+
+```sh
+docker build \
+--build-arg REACT_APP_BACKEND_URL="*" \
+--build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_USER_POOLS_ID="--------" \
+--build-arg REACT_APP_CLIENT_ID="---------" \
+-t frontend-react:v1 \
+-f Dockerfile.prod \
+.
+
 docker tag frontend-react:v1 $ECR_FRONTEND_REACT_URL:v1
 docker push $ECR_FRONTEND_REACT_URL:v1
 ```
 
+NGINX is the desired webserver in this setup.
 
 # Storing Secrets with Parameter Store
 Before creating the `TASK DEFINITION` paramaters should firstly be created so that it can be easily referenced in the respective json file. Instead of embedding secrets inside the task definition, AWS Systems Manager Parameter Store is used
@@ -820,6 +848,7 @@ React ECS Service         Flask ECS Service
 With this configuration, Cloudflare handles DNS resolution, the Application Load Balancer terminates TLS using the ACM certificate, and host-based routing directs requests to the appropriate ECS service.
 
 While this isn't sufficient, anyone with my ALB DNS can create a CNAME and point to my domain, I will fix this issue going forward and also move my domain to Route 53 as well.
+
 
 
 
