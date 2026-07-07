@@ -1,10 +1,13 @@
 import './MessageForm.css';
 import React from "react";
 import process from 'process';
+import { json, useParams } from 'react-router-dom';
+import {getAccessToken} from '../lib/CheckAuth';
 
-export default function MessageForm(props) {
+export default function ActivityForm(props) {
   const [count, setCount] = React.useState(0);
   const [message, setMessage] = React.useState('');
+  const params = useParams();
 
   const classes = []
   classes.push('count')
@@ -14,48 +17,35 @@ export default function MessageForm(props) {
 
   const onsubmit = async (event) => {
     event.preventDefault();
-
-    // ❌ prevent sending empty receiver
-    if (!props.userReceiverHandle) {
-      console.log("No receiver handle provided");
-      return;
-    }
-
     try {
       const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/messages`
-
-      let json = { 
-        message: message,
-        user_receiver_handle: props.userReceiverHandle
+      console.log('onsubmit payload', message)
+      let json = { 'message': message }
+      if (params.handle) {
+        json.handle = params.handle
+      } else {
+        json.message_group_uuid = params.message_group_uuid
       }
-
-      console.log('onsubmit payload', json)
-
+      await getAccessToken()
+      const access_token = localStorage.getItem("access_token")
       const res = await fetch(backend_url, {
         method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem("access_token")}`,
+          'Authorization': `Bearer ${access_token}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(json)
       });
-
       let data = await res.json();
-
       if (res.status === 200) {
-        console.log('data:', data)
-
+        console.log('data:',data)
         if (data.message_group_uuid) {
+          console.log('redirect to message group')
           window.location.href = `/messages/${data.message_group_uuid}`
         } else {
-          props.setMessages(current => [...current, data]);
+          props.setMessages(current => [...current,data]);
         }
-
-        // ✅ clear input after send
-        setMessage('');
-        setCount(0);
-
       } else {
         console.log(res)
       }
