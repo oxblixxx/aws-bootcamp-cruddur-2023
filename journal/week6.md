@@ -562,7 +562,7 @@ From the load balancer allow inbound:
 
 Allow outbound:
 
-* ECS service ports only with the source targeting the cruddur-service-sg
+* ECS service ports only(4567,3000) with the source targeting the cruddur-service-sg
 
 ```sh 
 aws ec2 create-security-group \
@@ -735,7 +735,158 @@ At this stage:
 ---
 
 
-## Configuring HTTP and HTTPS for the Application Load Balancer
+## Configuring Route 53, Application Load Balancer, and HTTPS
+
+### Creating the Route 53 Hosted Zone
+
+To host the application's DNS within AWS, I first created a **Public Hosted Zone** in Amazon Route 53.
+
+1. Navigate to **Route 53**.
+2. Select **Hosted Zones**.
+3. Click **Create Hosted Zone**.
+4. Enter the domain name and choose **Public Hosted Zone**.
+5. Create the hosted zone.
+
+Once the hosted zone was created, AWS automatically generated four authoritative nameservers (NS records) for the domain.
+
+### Updating the Domain Registrar
+
+Since the domain was registered with GoDaddy, I updated the domain to use the Route 53 nameservers.
+
+1. Copied the four nameservers from the Route 53 hosted zone.
+2. Log in to the GoDaddy dashboard.
+3. Navigate to the domain's **Nameservers** settings.
+4. Replace the default GoDaddy nameservers with the four AWS Route 53 nameservers.
+5. Save the changes.
+
+DNS nameserver propagation can take anywhere from a few minutes to **24–48 hours**, depending on DNS caches.
+
+To verify whether the delegation has propagated, run:
+
+```sh
+dig NS domain.com
+```
+
+When propagation is complete, the output should display the Route 53 nameservers assigned to the hosted zone, for example:
+
+```text
+example.com.    172800    IN    NS    ns-377.awsdns-47.com.
+example.com.    172800    IN    NS    ns-1815.awsdns-34.co.uk.
+example.com.    172800    IN    NS    ns-550.awsdns-04.net.
+example.com.    172800    IN    NS    ns-1441.awsdns-52.org.
+```
+
+If the output still shows GoDaddy nameservers such as:
+
+```text
+example.com.    3514    IN    NS    ns29.domaincontrol.com.
+example.com.    3514    IN    NS    ns30.domaincontrol.com.
+```
+
+the domain is still delegated to GoDaddy.
+
+The value **3514** represents the **remaining Time-To-Live (TTL)**, in seconds, for the cached NS record. As the TTL counts down, recursive DNS resolvers will requery the parent (.com) nameservers for updated delegation information. This value naturally decreases over time and is not configurable by either GoDaddy or Route 53.
+
+---
+
+### Creating Route 53 Alias Records
+
+After Route 53 became authoritative for the domain, I created DNS records for both the frontend and backend services.
+
+For each record:
+
+* Record Type: **A**
+* Alias: **Yes**
+* Alias Target: **Application Load Balancer (ALB)**
+* Region: Appropriate AWS Region
+* Routing Policy: **Simple**
+
+Using an Alias record allows Route 53 to resolve directly to the AWS Application Load Balancer without exposing the ALB DNS name through a CNAME record, while automatically tracking any infrastructure changes.
+
+---
+
+### Configuring HTTPS on the Application Load Balancer
+
+To serve the application securely over HTTPS, I configured an HTTPS listener on the Application Load Balancer.
+
+1. Open the **Application Load Balancer**.
+2. Navigate to the **Listeners** tab.
+3. Create a new listener using:
+
+   * Protocol: **HTTPS**
+   * Port: **443**
+4. Select the frontend target group as the default forwarding action.
+5. Choose an ACM certificate. If no certificate exists, request one through AWS Certificate Manager (ACM).
+6. Create the listener.
+
+---
+
+# Configuring Host-Based Routing
+
+Since both the frontend and backend are served through the same Application Load Balancer, I configured host-based routing.
+
+Within the HTTPS (443) listener:
+
+1. Open the listener rules.
+2. Add a new rule.
+3. Configure:
+
+   * **Condition:** Host Header
+   * **Value:** Backend domain (for example, `api.example.com`)
+4. Set the action to:
+
+   * **Forward to target groups**
+   * Target Group: Backend Target Group
+5. Assign a priority (for example, **10**).
+6. Save the rule.
+
+This configuration ensures that requests for the backend hostname are forwarded to the backend target group, while all other requests continue to the frontend.
+
+---
+
+### Redirecting HTTP to HTTPS
+
+To enforce secure communication, I configured HTTP to automatically redirect to HTTPS.
+
+### Default HTTP Redirect
+
+1. Create an **HTTP (80)** listener.
+2. Configure the default action:
+
+   * Redirect to URL
+   * Protocol: HTTPS
+   * Status Code: **301 (Permanent Redirect)**
+
+This ensures that all HTTP requests are redirected to HTTPS.
+
+## Backend HTTP Redirect
+
+To support backend hostnames, I also created a host-based rule on the HTTP listener.
+
+Configuration:
+
+* Condition:
+
+  * Host Header Value = Backend domain
+* Action:
+
+  * Redirect to HTTPS
+* Protocol:
+
+  * HTTPS
+* Status Code:
+
+  * **301 Permanent Redirect**
+* Priority:
+
+  * **10**
+
+With this configuration, any HTTP request to the backend hostname is automatically redirected to HTTPS before reaching the application.
+
+
+---
+
+## Configuring HTTP and HTTPS for the Application Load Balancer with Cloudflare
 
 At this stage, my domain's DNS is managed by **Cloudflare**, not Amazon Route 53. Because of this, I configured the Application Load Balancer (ALB) to work with Cloudflare by pointing my domain directly to the ALB.
 
