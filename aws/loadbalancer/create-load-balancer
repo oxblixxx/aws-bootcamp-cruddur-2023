@@ -1,212 +1,438 @@
 #!/bin/bash
 
+#############################################################
+# AWS Application Load Balancer Deployment Script
+#
+# Usage:
+#   ./create-alb.sh dev
+#   ./create-alb.sh prod
+#
+# Environments
+#   dev
+#     - Listener :3000 -> Frontend Target Group
+#     - Listener :4567 -> Backend Target Group
+#
+#   prod
+#     - HTTP 80  -> Redirect to HTTPS 443
+#     - HTTPS 443 -> Frontend Target Group (Default)
+#     - Frontend Host : cruddur.mustaphaops.online
+#       -> Frontend Target Group (Default)
+#     - Backend Host  : api.mustaphaops.online
+#     - Host Header:
+#         api.mustaphaops.online
+#       -> Backend Target Group (Priority 10)
+#############################################################
+# Also this script assumes that you have already created the following ACM certificate in the us-east-1 region:
+#  - *.mustaphaops.online
+# Also this script assumes that you have already created the following Route53 hosted zone:
+
+# Uncomment to stop execution whenever a command fails
 set -e
 
+#############################################################
+# Deployment Environment
+#
+# Defaults to "dev" if no argument is supplied.
+#
+# Example:
+#   ./create-alb.sh
+#   ./create-alb.sh prod
+#############################################################
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 {dev|prod}"
+    exit 1
+fi
+
+ENVIRONMENT="$1"
+
+case "$ENVIRONMENT" in
+    dev)
+        echo "Creating Development environment..."
+        echo "  - Frontend Listener :3000"
+        echo "  - Backend Listener  :4567"
+        ;;
+    prod)
+        echo "Creating Production environment..."
+        echo "  - HTTP  :80  -> Redirect to HTTPS"
+        echo "  - HTTPS :443"
+        echo "  - Frontend Host : cruddur.mustaphaops.online"
+        echo "  - Backend Host  : api.mustaphaops.online"
+        ;;
+    *)
+        echo "Invalid environment: $ENVIRONMENT"
+        echo "Usage: $0 {dev|prod}"
+        exit 1
+        ;;
+esac
+#ENVIRONMENT="${1:-dev}"
+
+#############################################################
+# Resource Names
+#############################################################
 ALB_NAME="cruddur-alb"
 ALB_SG_NAME="crudur-alb-sg"
+
 BACKEND_TG_NAME="backend-flask-tg"
 FRONTEND_TG_NAME="frontend-flask-tg"
 
+#############################################################
+# Production ACM Certificate
+#
+# Used only for the HTTPS (443) listener.
+#############################################################
+CERTIFICATE_ARN="arn:aws:acm:us-east-1:193654356005:certificate/edb389be-6bbd-4536-bc22-d4f17109a160"
+
+#############################################################
+# Backend API Host
+#
+# Requests to this hostname are routed to the backend target
+# group.
+#############################################################
+API_HOST="api.mustaphaops.online"
+FRONTEND_HOST="cruddur.mustaphaops.online"
+#############################################################
+# Application Ports
+#############################################################
 BACKEND_APP_PORT=4567
 FRONTEND_APP_PORT=3000
-BACKEND_HEALTH_CHECK_PATH="/api/health-check"
-FRONTEND_HEALTH_CHECK_PATH="/"
 
-echo "======================================"
-echo "Fetching Default VPC"
-echo "======================================"
+#############################################################
+# ROUTE 53
+#############################################################
+HOSTED_ZONE_NAME=mustaphaops.online
 
-DEFAULT_VPC_ID=$(aws ec2 describe-vpcs \
-  --filters "Name=is-default,Values=true" \
-  --query "Vpcs[0].VpcId" \
-  --output text)
-
-echo "VPC: $DEFAULT_VPC_ID"
-
-echo "======================================"
-echo "Fetching Subnets"
-echo "======================================"
-
-DEFAULT_SUBNET_IDS=$(aws ec2 describe-subnets \
-  --filters "Name=vpc-id,Values=$DEFAULT_VPC_ID" \
-  --query 'Subnets[*].SubnetId' \
-  --output text)
-
-echo "Subnets: $DEFAULT_SUBNET_IDS"
-
-read -r -a SUBNET_ARRAY <<< "$DEFAULT_SUBNET_IDS"
-
-echo "======================================"
-echo "Checking Security Group"
-echo "======================================"
-
-ALB_SG_ID=$(aws ec2 describe-security-groups \
-  --filters \
-    "Name=vpc-id,Values=$DEFAULT_VPC_ID" \
-    "Name=group-name,Values=$ALB_SG_NAME" \
-  --query 'SecurityGroups[0].GroupId' \
-  --output text 2>/dev/null || true)
-
-if [[ -z "$ALB_SG_ID" || "$ALB_SG_ID" == "None" ]]; then
-  echo "Creating Security Group..."
-
-  ALB_SG_ID=$(aws ec2 create-security-group \
-    --group-name "$ALB_SG_NAME" \
-    --description "Cruddur ALB Security Group" \
-    --vpc-id "$DEFAULT_VPC_ID" \
-    --query 'GroupId' \
+#############################################################
+# Fetch Default VPC
+#############################################################
+VPC_ID=$(aws ec2 describe-vpcs \
+    --filters Name=is-default,Values=true \
+    --query 'Vpcs[0].VpcId' \
     --output text)
 
-  aws ec2 authorize-security-group-ingress \
-    --group-id "$ALB_SG_ID" \
-    --protocol tcp \
-    --port 80 \
-    --cidr 0.0.0.0/0
+#############################################################
+# Fetch all subnets from the Default VPC
+#
+# These are used when creating the Application Load Balancer.
+#############################################################
+read -ra SUBNETS <<< "$(
+aws ec2 describe-subnets \
+    --filters Name=vpc-id,Values=$VPC_ID \
+    --query 'Subnets[*].SubnetId' \
+    --output text
+)"
 
-  echo "Created Security Group: $ALB_SG_ID"
-else
-  echo "Security Group already exists: $ALB_SG_ID"
-fi
+#############################################################
+# Create or Reuse the ALB Security Group
+#############################################################
+SG=$(aws ec2 describe-security-groups \
+    --filters \
+        Name=vpc-id,Values=$VPC_ID \
+        Name=group-name,Values=$ALB_SG_NAME \
+    --query 'SecurityGroups[0].GroupId' \
+    --output text 2>/dev/null || true)
 
-echo "======================================"
-echo "Checking ALB"
-echo "======================================"
+# if [[ -z "$SG" || "$SG" == "None" ]]; then
 
-ALB_ARN=$(aws elbv2 describe-load-balancers \
-  --names "$ALB_NAME" \
-  --query 'LoadBalancers[0].LoadBalancerArn' \
-  --output text 2>/dev/null || true)
+#     echo "Creating Security Group..."
 
-if [[ -z "$ALB_ARN" || "$ALB_ARN" == "None" ]]; then
+#     SG=$(aws ec2 create-security-group \
+#         --group-name "$ALB_SG_NAME" \
+#         --description "ALB Security Group" \
+#         --vpc-id "$VPC_ID" \
+#         --query GroupId \
+#         --output text)
 
-  echo "Creating ALB..."
+#     #########################################################
+#     # Allow HTTP
+#     #########################################################
+#     aws ec2 authorize-security-group-ingress \
+#         --group-id "$SG" \
+#         --protocol tcp \
+#         --port 80 \
+#         --cidr 0.0.0.0/0 || true
 
-  ALB_ARN=$(aws elbv2 create-load-balancer \
-    --name "$ALB_NAME" \
-    --type application \
-    --scheme internet-facing \
-    --subnets "${SUBNET_ARRAY[@]}" \
-    --security-groups "$ALB_SG_ID" \
+#     #########################################################
+#     # Allow HTTPS
+#     #########################################################
+#     aws ec2 authorize-security-group-ingress \
+#         --group-id "$SG" \
+#         --protocol tcp \
+#         --port 443 \
+#         --cidr 0.0.0.0/0 || true
+
+#     #########################################################
+#     # Development Listener Ports
+#     #########################################################
+#     aws ec2 authorize-security-group-ingress \
+#         --group-id "$SG" \
+#         --protocol tcp \
+#         --port 3000 \
+#         --cidr 0.0.0.0/0 || true
+
+#     aws ec2 authorize-security-group-ingress \
+#         --group-id "$SG" \
+#         --protocol tcp \
+#         --port 4567 \
+#         --cidr 0.0.0.0/0 || true
+# fi
+
+#############################################################
+# Create or Reuse Application Load Balancer
+#############################################################
+ALB=$(aws elbv2 describe-load-balancers \
+    --names "$ALB_NAME" \
     --query 'LoadBalancers[0].LoadBalancerArn' \
-    --output text)
+    --output text 2>/dev/null || true)
 
-  echo "Created ALB"
-else
-  echo "ALB already exists"
+if [[ -z "$ALB" || "$ALB" == "None" ]]; then
+
+    echo "Creating Application Load Balancer..."
+
+    ALB=$(aws elbv2 create-load-balancer \
+        --name "$ALB_NAME" \
+        --type application \
+        --scheme internet-facing \
+        --subnets "${SUBNETS[@]}" \
+        --security-groups "$SG" \
+        --query 'LoadBalancers[0].LoadBalancerArn' \
+        --output text)
 fi
 
+#############################################################
+# Fetch ALB DNS Name
+#############################################################
 ALB_DNS=$(aws elbv2 describe-load-balancers \
-  --names "$ALB_NAME" \
-  --query 'LoadBalancers[0].DNSName' \
-  --output text)
-
-echo "======================================"
-echo "Checking BACKEND Target Group"
-echo "======================================"
-BACKEND_TG_ARN=$(aws elbv2 describe-target-groups \
-  --names "$BACKEND_TG_NAME" \
-  --query 'TargetGroups[0].TargetGroupArn' \
-  --output text 2>/dev/null || true)
-
-if [[ -z "$BACKEND_TG_ARN" || "$BACKEND_TG_ARN" == "None" ]]; then
-
-  echo "Creating Target Group..."
-
-  BACKEND_TG_ARN=$(aws elbv2 create-target-group \
-    --name "$BACKEND_TG_NAME" \
-    --protocol HTTP \
-    --port "$BACKEND_APP_PORT" \
-    --target-type ip \
-    --vpc-id "$DEFAULT_VPC_ID" \
-    --health-check-path "$BACKEND_HEALTH_CHECK_PATH" \
-    --query 'TargetGroups[0].TargetGroupArn' \
+    --load-balancer-arns "$ALB" \
+    --query 'LoadBalancers[0].DNSName' \
     --output text)
 
-  echo "Created Target Group"
+#############################################################
+# Function:
+# Create Target Group if it doesn't exist.
+#############################################################
+create_tg() {
+
+    local NAME=$1
+    local PORT=$2
+    local HEALTH_CHECK=$3
+
+    local ARN=$(aws elbv2 describe-target-groups \
+        --names "$NAME" \
+        --query 'TargetGroups[0].TargetGroupArn' \
+        --output text 2>/dev/null || true)
+
+    if [[ -z "$ARN" || "$ARN" == "None" ]]; then
+
+        echo "Creating Target Group: $NAME"
+
+        ARN=$(aws elbv2 create-target-group \
+            --name "$NAME" \
+            --protocol HTTP \
+            --port "$PORT" \
+            --target-type ip \
+            --vpc-id "$VPC_ID" \
+            --health-check-path "$HEALTH_CHECK" \
+            --query 'TargetGroups[0].TargetGroupArn' \
+            --output text)
+    fi
+
+    echo "$ARN"
+}
+
+#############################################################
+# Backend Target Group
+#############################################################
+BACKEND_TG=$(create_tg \
+    "$BACKEND_TG_NAME" \
+    "$BACKEND_APP_PORT" \
+    "/api/health-check")
+
+#############################################################
+# Frontend Target Group
+#############################################################
+FRONTEND_TG=$(create_tg \
+    "$FRONTEND_TG_NAME" \
+    "$FRONTEND_APP_PORT" \
+    "/")
+
+#############################################################
+# Production Deployment
+#############################################################
+if [[ "$ENVIRONMENT" == "prod" ]]; then
+
+    #########################################################
+    # HTTP Listener (80)
+    #
+    # Redirect all traffic to HTTPS.
+    #########################################################
+    H80=$(aws elbv2 describe-listeners \
+        --load-balancer-arn "$ALB" \
+        --query 'Listeners[?Port==`80`].ListenerArn|[0]' \
+        --output text)
+
+    if [[ "$H80" == "None" ]]; then
+
+        aws elbv2 create-listener \
+            --load-balancer-arn "$ALB" \
+            --protocol HTTP \
+            --port 80 \
+            --default-actions \
+            Type=redirect,RedirectConfig='{Protocol=HTTPS,Port="443",StatusCode=HTTP_301}'
+    fi
+
+    #########################################################
+    # HTTPS Listener (443)
+    #
+    # Default action forwards requests to the Frontend
+    # Target Group.
+    #########################################################
+    H443=$(aws elbv2 describe-listeners \
+        --load-balancer-arn "$ALB" \
+        --query 'Listeners[?Port==`443`].ListenerArn|[0]' \
+        --output text)
+
+    if [[ "$H443" == "None" ]]; then
+
+        H443=$(aws elbv2 create-listener \
+            --load-balancer-arn "$ALB" \
+            --protocol HTTPS \
+            --port 443 \
+            --certificates CertificateArn="$CERTIFICATE_ARN" \
+            --ssl-policy ELBSecurityPolicy-TLS13-1-2-2021-06 \
+            --default-actions Type=forward,TargetGroupArn="$FRONTEND_TG" \
+            --query 'Listeners[0].ListenerArn' \
+            --output text)
+    fi
+
+    #########################################################
+    # Listener Rule
+    #
+    # Priority : 10
+    #
+    # Host:
+    #   api.mustaphaops.online
+    #
+    # Forward:
+    #   Backend Target Group
+    #########################################################
+    RULE=$(aws elbv2 describe-rules \
+        --listener-arn "$H443" \
+        --query "Rules[?Priority=='10'].RuleArn|[0]" \
+        --output text)
+
+    if [[ "$RULE" == "None" ]]; then
+
+        aws elbv2 create-rule \
+            --listener-arn "$H443" \
+            --priority 10 \
+            --conditions \
+            Field=host-header,HostHeaderConfig="{Values=[$API_HOST]}" \
+            --actions \
+            Type=forward,TargetGroupArn="$BACKEND_TG"
+    fi
+
+#############################################################
+# Development Deployment
+#############################################################
 else
-  echo "Target Group already exists"
+
+    #########################################################
+    # Create:
+    #
+    # 3000 -> Frontend Target Group
+    # 4567 -> Backend Target Group
+    #########################################################
+    for P in 3000 4567; do
+
+        L=$(aws elbv2 describe-listeners \
+            --load-balancer-arn "$ALB" \
+            --query "Listeners[?Port==\`$P\`].ListenerArn|[0]" \
+            --output text)
+
+        if [[ "$L" == "None" ]]; then
+
+            TG=$FRONTEND_TG
+
+            [[ "$P" == "4567" ]] && TG=$BACKEND_TG
+
+            aws elbv2 create-listener \
+                --load-balancer-arn "$ALB" \
+                --protocol HTTP \
+                --port "$P" \
+                --default-actions \
+                Type=forward,TargetGroupArn="$TG" >/dev/null
+        fi
+    done
 fi
 
-echo "======================================"
-echo "Checking FRONTEND Target Group"
-echo "======================================"
+echo "Updating Route53 records..."
 
-FRONTEND_TG_ARN=$(aws elbv2 describe-target-groups \
-  --names "$FRONTEND_TG_NAME" \
-  --query 'TargetGroups[0].TargetGroupArn' \
-  --output text 2>/dev/null || true)
-
-if [[ -z "$FRONTEND_TG_ARN" || "$FRONTEND_TG_ARN" == "None" ]]; then
-
-  echo "Creating Target Group..."
-
-  FRONTEND_TG_ARN=$(aws elbv2 create-target-group \
-    --name "$FRONTEND_TG_NAME" \
-    --protocol HTTP \
-    --port "$FRONTEND_APP_PORT" \
-    --target-type ip \
-    --vpc-id "$DEFAULT_VPC_ID" \
-    --health-check-path "$FRONTEND_HEALTH_CHECK_PATH" \
-    --query 'TargetGroups[0].TargetGroupArn' \
+# Get Hosted Zone ID
+HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name \
+    --dns-name "$HOSTED_ZONE_NAME" \
+    --query 'HostedZones[0].Id' \
     --output text)
 
-  echo "Created Target Group"
-else
-  echo "FRONTEND Target Group already exists"
-fi
+# Route53 returns /hostedzone/XXXXXXXX
+echo HOSTED_ZONE_ID="${HOSTED_ZONE_ID##*/}"
 
+# Get ALB DNS Name and Canonical Hosted Zone ID
+read ALB_DNS ALB_ZONE_ID <<< "$(
+aws elbv2 describe-load-balancers \
+    --load-balancer-arns "$ALB" \
+    --query 'LoadBalancers[0].[DNSName,CanonicalHostedZoneId]' \
+    --output text
+)"
 
-echo "======================================"
-echo "Checking Listener"
-echo "======================================"
+# https://docs.aws.amazon.com/cli/latest/reference/route53/change-resource-record-sets.html
+aws route53 change-resource-record-sets \
+    --hosted-zone-id "$HOSTED_ZONE_ID" \
+    --change-batch "{
+        \"Changes\": [
+            {
+                \"Action\": \"UPSERT\",
+                \"ResourceRecordSet\": {
+                    \"Name\": \"$FRONTEND_HOST\",
+                    \"Type\": \"A\",
+                    \"AliasTarget\": {
+                        \"HostedZoneId\": \"$ALB_ZONE_ID\",
+                        \"DNSName\": \"dualstack.$ALB_DNS\",
+                        \"EvaluateTargetHealth\": false
+                    }
+                }
+            },
+            {
+                \"Action\": \"UPSERT\",
+                \"ResourceRecordSet\": {
+                    \"Name\": \"$API_HOST\",
+                    \"Type\": \"A\",
+                    \"AliasTarget\": {
+                        \"HostedZoneId\": \"$ALB_ZONE_ID\",
+                        \"DNSName\": \"dualstack.$ALB_DNS\",
+                        \"EvaluateTargetHealth\": false
+                    }
+                }
+            }
+        ]
+    }"
 
-LISTENER_ARN=$(aws elbv2 describe-listeners \
-  --load-balancer-arn "$ALB_ARN" \
-  --query 'Listeners[?Port==`80`].ListenerArn | [0]' \
-  --output text 2>/dev/null || true)
+echo "Route53 records updated successfully."
 
-if [[ -z "$LISTENER_ARN" || "$LISTENER_ARN" == "None" ]]; then
+#############################################################
+# Output Summary
+#############################################################
+cat <<EOF
 
-  echo "Creating Listener..."
+==========================================
+Deployment Complete
+==========================================
 
-  BACKEND_LISTENER_ARN=$(aws elbv2 create-listener \
-    --load-balancer-arn "$ALB_ARN" \
-    --protocol HTTP \
-    --port 4567 \
-    --default-actions Type=forward,TargetGroupArn="$BACKEND_TG_ARN" \
-    --query 'Listeners[0].ListenerArn' \
-    --output text)
+Environment : $ENVIRONMENT
+ALB DNS     : $ALB_DNS
 
-  FRONTEND_LISTENER_ARN=$(aws elbv2 create-listener \
-    --load-balancer-arn "$ALB_ARN" \
-    --protocol HTTP \
-    --port 3000 \
-    --default-actions Type=forward,TargetGroupArn="$FRONTEND_TG_ARN" \
-    --query 'Listeners[0].ListenerArn' \
-    --output text)
+Frontend TG : $FRONTEND_TG
+Backend TG  : $BACKEND_TG
 
-  echo "Created Listener"
-else
-  echo "Listener already exists"
-fi
+==========================================
 
-OUTPUT_FILE="deployment-info.txt"
-rm -rf $OUTPUT_FILE
-{
-    echo "======================================"
-    echo "RESULTS"
-    echo "======================================"
-
-    echo "ALB ARN              : $ALB_ARN"
-    echo "ALB DNS              : $ALB_DNS"
-    echo "BACKEND TG ARN       : $BACKEND_TG_ARN"
-    echo "FRONTEND TG ARN      : $FRONTEND_TG_ARN"
-} | tee -a "$OUTPUT_FILE"
-
-# echo "ALB ARN      : $ALB_ARN" 
-# echo "ALB DNS      : $ALB_DNS"
-# echo "BACKEND TG ARN       : $BACKEND_TG_ARN"
-# echo "FRONTEND TG ARN       : $FRONTEND_TG_ARN"
-
-
-echo "DONE"
+EOF
