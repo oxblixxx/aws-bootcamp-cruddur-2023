@@ -57,7 +57,7 @@ case "$SERVICE" in
 
     backend-flask)
         BUILD_CONTEXT="$ROOT_DIR/backend-flask"
-        DOCKERFILE="Dockerfile"
+        DOCKERFILE="Dockerfile.prod"
         BUILD_ARGS=()
         ;;
 
