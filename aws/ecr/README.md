@@ -1,22 +1,52 @@
-This directory creates a script to push to ecr
+# Amazon ECR
 
-Your registry Id, IS YOUR VALUE FOR ACCOUNT WHEN YOU RUN `aws sts get-caller-identity"
+This directory contains scripts for creating Amazon ECR repositories and pushing Docker images.
 
-aws ecr create-repository --repository-name frontend-react --generate-cli-skeleton > create-ecr.json
+## Get Your AWS Account ID
 
+Your ECR registry ID is your AWS Account ID. Retrieve it with:
 
+```bash
+aws sts get-caller-identity
+```
+---
 
+## Create an ECR Repository
 
-```sh
-i Info → Not all multiplatform-content is present and only the available single-platform image was pushed
-         sha256:7f404d09ceb780c51f4fac7592c46b8f21211474aacce25389eb0df06aaa7472 -> sha256:46a10b2d8f2e9ae5c5e8ffedd5ae18a960d64b8c39c09e24fe2ee41d7148c249
+Generate the repository creation template:
+
+```bash
+aws ecr create-repository \
+  --repository-name frontend-react \
+  --generate-cli-skeleton > create-ecr.json
 ```
 
-Currently, frontend repository is set to immutable, so the version number needs to be changed when images are pushed, the backend works as the same to latest which aligns with the task definition.
-But for frontend, use this command to create and tag image
+Review and modify the generated JSON if necessary before creating the repository.
 
-```sh
-./build-image  frontend-react -t v5
+---
+
+## Pushing Images
+
+While pushing an image, you may see a message similar to:
+
+```text
+Info → Not all multiplatform-content is present and only the available single-platform image was pushed
 ```
 
-Then proceed to task-definition to update the version number and update the task. 
+This is an informational message indicating that only the available platform image was pushed.
+
+---
+
+## Image Tagging
+
+The **frontend-react** repository is configured with **immutable tags**. As a result, every new image must be pushed with a unique version tag.
+
+Example:
+
+```bash
+./build-image frontend-react -t v5
+```
+
+After pushing a new image, update the image tag in the [ECS task definition](aws/ecs/task-definitions/frontend-react.json) and deploy the new task revision.
+
+The backend repository follows the same workflow, except it currently uses **MUTABLE** tag with the `latest` tag, which matches the existing ECS task definition.
