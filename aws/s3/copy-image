@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# https://docs.aws.amazon.com/cli/latest/reference/s3/
+
+# https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html
+set -e
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <destination-filename>"
+    exit 1
+fi
+
+aws s3 cp \
+    ./assets/bird.jpg \
+    "s3://assets.mustaphaops.online/avatars/original/$1"
