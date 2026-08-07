@@ -1,0 +1,62 @@
+tasks:
+  - name: aws-cli
+    env:
+      AWS_CLI_AUTO_PROMPT: on-partial
+    init: |
+      cd /workspace
+      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      unzip awscliv2.zip
+      sudo ./aws/install
+      cd $THEIA_WORKSPACE_ROOT
+      cd /workspace/aws-bootcamp-cruddur-2023/frontend-react-js
+      npm i install
+      cd /workspace/aws-bootcamp-cruddur-2023/frontend-react-js
+      npm install --save \
+          @opentelemetry/api \
+          @opentelemetry/sdk-trace-web \
+          @opentelemetry/exporter-trace-otlp-http \
+          @opentelemetry/context-zone
+          @opentelemetry/instrumentation \
+          @opentelemetry/instrumentation-xml-http-request \
+          @opentelemetry/instrumentation-fetch \
+          @npm i aws-amplify
+
+  - name: export env
+    init: |
+      cd /workspace/aws-bootcamp-cruddur-2023
+      cp .env.example .env
+      sed -i "/^GITPOD_WORKSPACE_ID=/c\GITPOD_WORKSPACE_ID=$GITPOD_WORKSPACE_ID" .env || echo "GITPOD_WORKSPACE_ID=$GITPOD_WORKSPACE_ID" >> .env
+      sed -i "/^AWS_DEFAULT_REGION=/c\AWS_DEFAULT_REGION=us-east-1" .env || echo "AWS_DEFAULT_REGION=us-east-1" >> .env
+      sed -i "/^GITPOD_WORKSPACE_CLUSTER_HOST=/c\GITPOD_WORKSPACE_CLUSTER_HOST=$GITPOD_WORKSPACE_CLUSTER_HOST" .env || echo "GITPOD_WORKSPACE_CLUSTER_HOST=$GITPOD_WORKSPACE_CLUSTER_HOST" >> .env
+
+### POSTGRESSS CLI CLIENT
+  - name: postgres
+    init: |
+      curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+      echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+      sudo apt update
+      sudo apt install -y postgresql-client-13 libpq-dev
+    command: |
+      export GITPOD_IP=$(curl ifconfig.me)/32
+      source "$THEIA_WORKSPACE_ROOT/backend-flask/bin/rds-update-sg-rule"   
+  
+  - name: start docker compose
+    init: |
+      export LOCAL_CONNECTION_URL="postgresql://postgres:password@localhost:5432"
+      sudo docker compose up -d
+vscode:
+  extensions:
+    - 42Crunch.vscode-openapi
+    - cweijan.vscode-postgresql-client2
+
+ports:
+  - name: frontend
+    port: 3000
+    onOpen: open-browser
+    visibility: public
+  - name: backend
+    port: 4567
+    visibility: public
+  - name: xray-daemon
+    port: 2000
+    visibility: public    

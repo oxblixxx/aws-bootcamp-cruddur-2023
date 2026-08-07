@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+echo "== terminating connections to cruddur database"
+
+psql $CONNECTION_URL <<EOF
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = 'cruddur'
+AND pid <> pg_backend_pid();
+EOF
+
+echo "== done"

@@ -1,0 +1,17 @@
+{
+    "registryId": "193654356005",
+    "repositoryName": "cruddur-node",
+    "tags": [
+        {
+            "Key": "ENV",
+            "Value": "STAGING"
+        }
+    ],
+    "imageTagMutability": "IMMUTABLE",
+    "imageScanningConfiguration": {
+        "scanOnPush": true
+    },
+    "encryptionConfiguration": {
+        "encryptionType": "AES256"
+    }
+}

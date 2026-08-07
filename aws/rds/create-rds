@@ -1,0 +1,124 @@
+#!/bin/bash
+
+set -e
+
+#CYAN='\033[1;36m'
+#NO_COLOR='\033[0m'
+#LABEL="db-setup"
+#printf ${CYAN}==== ${LABEL}${NO_COLOR}\n"
+
+bin_path="$(realpath .)/../db"
+
+
+# ─── Config ─────────────────────────────────────────────
+DB_INSTANCE_ID="cruddur-db-instance"
+DB_NAME="cruddur"
+DB_USERNAME="oxblixxx"
+DB_PASSWORD="wearewinning"
+
+DB_CLASS="db.t3.micro"
+ENGINE="postgres"
+ENGINE_VERSION="14.19"
+ALLOCATED_STORAGE=20
+AZ="us-east-1a"
+PORT=5432
+
+# ─── Check if RDS Instance ───────────────────────────────
+
+echo "Checking if RDS instance exists..."
+
+DB_STATUS=$(aws rds describe-db-instances \
+  --db-instance-identifier "$DB_INSTANCE_ID" \
+  --query "DBInstances[0].DBInstanceStatus" \
+  --output text 2>/dev/null || echo "none")
+
+if [[ "$DB_STATUS" == "none" ]]; then
+  echo "DB not found. Creating..."
+
+  aws rds create-db-instance \
+    --db-instance-identifier "$DB_INSTANCE_ID" \
+    --db-instance-class db.t3.micro \
+    --engine postgres \
+    --engine-version 14.19 \
+    --master-username "$DB_USERNAME" \
+    --master-user-password "$DB_PASSWORD" \
+    --allocated-storage 20 \
+    --availability-zone us-east-1a \
+    --backup-retention-period 0 \
+    --port "$PORT" \
+    --no-multi-az \
+    --db-name "$DB_NAME" \
+    --storage-type gp2 \
+    --publicly-accessible \
+    --storage-encrypted \
+    --enable-performance-insights \
+    --performance-insights-retention-period 7 \
+    --no-deletion-protection
+
+  echo "Waiting for DB to become available..."
+  aws rds wait db-instance-available \
+    --db-instance-identifier "$DB_INSTANCE_ID"
+
+else
+  echo "✔ DB already exists with status: $DB_STATUS"
+fi
+# ─── Create RDS Instance ───────────────────────────────
+# https://docs.aws.amazon.com/cli/latest/reference/rds/create-db-instance.html
+# aws rds create-db-instance \
+#   --db-instance-identifier "$DB_INSTANCE_ID" \
+#   --db-instance-class "$DB_CLASS" \
+#   --engine "$ENGINE" \
+#   --engine-version "$ENGINE_VERSION" \
+#   --master-username "$DB_USERNAME" \
+#   --master-user-password "$DB_PASSWORD" \
+#   --allocated-storage "$ALLOCATED_STORAGE" \
+#   --availability-zone "$AZ" \
+#   --backup-retention-period 0 \
+#   --port "$PORT" \
+#   --no-multi-az \
+#   --db-name "$DB_NAME" \
+#   --storage-type gp2 \
+#   --publicly-accessible \
+#   --storage-encrypted \
+#   --enable-performance-insights \
+#   --performance-insights-retention-period 7 \
+#   --no-deletion-protection
+
+# https://docs.aws.amazon.com/cli/latest/reference/rds/wait/db-instance-available.html
+# ─── Wait for DB ────────────────────────────────────────
+echo "Waiting for DB to be available..."
+aws rds wait db-instance-available \
+  --db-instance-identifier "$DB_INSTANCE_ID"
+
+# ─── Get Endpoint ───────────────────────────────────────
+DB_HOST=$(aws rds describe-db-instances \
+  --db-instance-identifier "$DB_INSTANCE_ID" \
+  --query "DBInstances[0].Endpoint.Address" \
+  --output text)
+
+echo "DB Host: $DB_HOST"
+
+# ─── Build PostgreSQL URL ───────────────────────────────
+export PROD_CONNECTION_URL="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+echo "PROD_CONNECTION_URL=$PROD_CONNECTION_URL"
+
+export CONNECTION_URL="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+echo "CONNECTION_URL=$CONNECTION_URL"
+
+# ─── Export it for current shell session ────────────────
+# export PROD_CONNECTION_URL
+# export CONNECTION_URL
+
+# ─── Setup SSM Parameter Store ─────────────────────────
+# Store the connection URL in AWS Systems Manager Parameter Store as a SecureString
+# DELETE the existing parameter if it exists, then create a new one
+aws ssm delete-parameter --name "/cruddur/backend-flask/CONNECTION_URL" || true    
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/CONNECTION_URL" --value $PROD_CONNECTION_URL
+
+# ─── Optional: write to .env file ───────────────────────
+#echo "PROD_CONNECTION_URL=$PROD_CONNECTION_URL" >> .env
+
+source "$bin_path/schema-load" prod
+source "$bin_path/seed" prod
+
+echo "Done ✔"
