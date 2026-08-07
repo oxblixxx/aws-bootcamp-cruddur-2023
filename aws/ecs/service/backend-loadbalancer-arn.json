@@ -1,7 +1,0 @@
-[
-  {
-    "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:193654356005:targetgroup/backend-flask-tg/c0fa7981b95eb97d",
-    "containerName": "backend-flask",
-    "containerPort": 4567
-  }
-]

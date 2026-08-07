@@ -1,10 +1,24 @@
-npm ERR! code ENOENT
-npm ERR! syscall open
-npm ERR! path /frontend-react-js/package.json
-npm ERR! errno -2
-npm ERR! enoent ENOENT: no such file or directory, open '/frontend-react-js/package.json'
-npm ERR! enoent This is related to npm not being able to find a file.
-npm ERR! enoent 
+  change-resource-record-sets
+--hosted-zone-id /hostedzone/Z019872318L9KJ4JJOIIN
+--change-batch 
 
-npm ERR! A complete log of this run can be found in:
-npm ERR!     /root/.npm/_logs/2023-03-01T02_20_22_280Z-debug-0.log
+
+
+aws route53 change-resource-record-sets \
+    --hosted-zone-id Z019872318L9KJ4JJOIIN \
+    --change-batch '{
+      "Changes": [
+        {
+          "Action": "UPSERT",
+          "ResourceRecordSet": {
+            "Name": "cruddur.mustaphaops.online",
+            "Type": "A",
+            "AliasTarget": {
+              "HostedZoneId": "Z019872318L9KJ4JJOIIN",
+              "DNSName": "xxxxxx-1.elb.amazonaws.com",
+              "EvaluateTargetHealth": false
+            }
+          }
+        }
+      ]
+    }'
