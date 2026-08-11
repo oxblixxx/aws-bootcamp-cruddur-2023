@@ -2,14 +2,14 @@ import './UserFeedPage.css';
 import React from "react";
 import { useParams } from 'react-router-dom';
 
-import DesktopNavigation  from '../components/DesktopNavigation';
-import DesktopSidebar     from '../components/DesktopSidebar';
+import DesktopNavigation from '../components/DesktopNavigation';
+import DesktopSidebar from '../components/DesktopSidebar';
 import ActivityFeed from '../components/ActivityFeed';
 import ActivityForm from '../components/ActivityForm';
 import ProfileHeading from '../components/ProfileHeading';
+import ProfileForm from '../components/ProfileForm';
 
-
-import {checkAuth, getAccessToken} from '../lib/CheckAuth';
+import { checkAuth, getAccessToken } from '../lib/CheckAuth';
 
 export default function UserFeedPage() {
   const [activities, setActivities] = React.useState([]);
@@ -17,54 +17,98 @@ export default function UserFeedPage() {
   const [popped, setPopped] = React.useState([]);
   const [poppedProfile, setPoppedProfile] = React.useState([]);
   const [user, setUser] = React.useState(null);
+
   const dataFetchedRef = React.useRef(false);
 
   const params = useParams();
 
   const loadData = async () => {
     try {
-      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/@${params.handle}`
-      await getAccessToken()
-      const access_token = localStorage.getItem("access_token")
+      // React Router route is /:handle
+      // This means params.handle can be either:
+      // "oxblixxxx" or "@oxblixxxx"
+      const handle = params.handle.startsWith('@')
+        ? params.handle
+        : `@${params.handle}`;
+
+      const backend_url =
+        `${process.env.REACT_APP_BACKEND_URL}/api/activities/${handle}`;
+
+      console.log('Profile handle:', handle);
+      console.log('Backend URL:', backend_url);
+
+      await getAccessToken();
+
+      const access_token = localStorage.getItem("access_token");
+
       const res = await fetch(backend_url, {
         headers: {
           Authorization: `Bearer ${access_token}`
         },
         method: "GET"
       });
-      let resJson = await res.json();
+
+      const resJson = await res.json();
+
+      console.log('Profile API status:', res.status);
+      console.log('Profile API response:', resJson);
+
       if (res.status === 200) {
-        setProfile(resJson.profile)
-        setActivities(resJson.activities)
+        setProfile(resJson.profile);
+        setActivities(resJson.activities);
       } else {
-        console.log(res)
+        console.error('Profile API request failed:', res);
       }
     } catch (err) {
-      console.log(err);
+      console.error('Error loading profile:', err);
     }
   };
 
-  React.useEffect(()=>{
-    //prevents double call
+  React.useEffect(() => {
+    // Prevent duplicate API calls
     if (dataFetchedRef.current) return;
+
     dataFetchedRef.current = true;
 
     loadData();
     checkAuth(setUser);
-  }, [])
+  }, []);
 
   return (
     <article>
-      <DesktopNavigation user={user} active={'profile'} setPopped={setPopped} />
+      <DesktopNavigation
+        user={user}
+        active={'profile'}
+        setPopped={setPopped}
+      />
+
       <div className='content'>
-        <ActivityForm popped={popped} setActivities={setActivities} />
+        <ActivityForm
+          popped={popped}
+          setActivities={setActivities}
+        />
+
+        <ProfileForm
+          profile={profile}
+          popped={poppedProfile}
+          setPopped={setPoppedProfile}
+        />
 
         <div className='activity_feed'>
-          <ProfileHeading setPopped={setPoppedProfile} profile={profile} />
-          <ActivityFeed activities={activities} />
+          <ProfileHeading
+            setPopped={setPoppedProfile}
+            profile={profile}
+          />
+
+          <ActivityFeed
+            activities={activities}
+          />
         </div>
       </div>
-      <DesktopSidebar user={user} />
+
+      <DesktopSidebar
+        user={user}
+      />
     </article>
   );
 }
