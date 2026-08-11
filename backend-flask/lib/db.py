@@ -2,108 +2,167 @@ from psycopg_pool import ConnectionPool
 import os
 import re
 import sys
+
 from flask import current_app as app
 
+
 class Db:
+
     def __init__(self):
         self.init_pool()
 
     # Load SQL template from db/sql
     def template(self, *args):
         pathing = list((app.root_path, 'db', 'sql') + args)
-        pathing[-1] = pathing[-1] + ".sql"
+        pathing[-1] = pathing[-1] + '.sql'
         template_path = os.path.join(*pathing)
 
         green = '\033[92m'
         no_color = '\033[0m'
-        print("\n")
-        print(f'{green} Load SQL Template: {template_path} {no_color}')
+
+        print('\n')
+        print(f'{green}Load SQL Template: {template_path}{no_color}')
 
         with open(template_path, 'r') as f:
             template_content = f.read()
+
         return template_content
 
     # Initialize connection pool
     def init_pool(self):
-        connection_url = os.getenv("CONNECTION_URL")
+        connection_url = os.getenv('CONNECTION_URL')
+
+        if not connection_url:
+            raise RuntimeError('CONNECTION_URL is not set')
+
         self.pool = ConnectionPool(connection_url)
 
     # Debug print params
     def print_params(self, params):
         blue = '\033[94m'
         no_color = '\033[0m'
-        print(f'{blue} SQL Params:{no_color}')
+
+        print(f'{blue}SQL Params:{no_color}')
+
         for key, value in params.items():
-            print(key, ":", value)
+            print(key, ':', value)
 
     # Debug print SQL
-    def print_sql(self, title, sql, params={}):
+    def print_sql(self, title, sql, params=None):
+        if params is None:
+            params = {}
+
         cyan = '\033[96m'
         no_color = '\033[0m'
-        print(f'{cyan} SQL STATEMENT-[{title}]------{no_color}')
+
+        print(f'{cyan}SQL STATEMENT-[{title}]------{no_color}')
         print(sql, params)
 
     # Execute commit queries (INSERT/UPDATE)
-    def query_commit(self, sql, params={}):
-        self.print_sql('commit with returning', sql, params)
-        pattern = r"\bRETURNING\b"
-        is_returning_id = re.search(pattern, sql)
+    def query_commit(self, sql, params=None, verbose=True):
+        if params is None:
+            params = {}
+
+        if verbose:
+            self.print_sql(
+                'commit with returning',
+                sql,
+                params
+            )
+
+        pattern = r'\bRETURNING\b'
+        is_returning_id = re.search(pattern, sql, re.IGNORECASE)
 
         try:
             with self.pool.connection() as conn:
-                cur = conn.cursor()
-                cur.execute(sql, params)
-                returning_id = None
-                if is_returning_id:
-                    returning_id = cur.fetchone()[0]
-                conn.commit()
-                if is_returning_id:
-                    return returning_id
+                with conn.cursor() as cur:
+                    cur.execute(sql, params)
+
+                    returning_id = None
+
+                    if is_returning_id:
+                        result = cur.fetchone()
+
+                        if result:
+                            returning_id = result[0]
+
+                    conn.commit()
+
+                    if is_returning_id:
+                        return returning_id
+
         except Exception as err:
             self.print_sql_err(err)
             raise
 
     # Return array of JSON objects
-    def query_array_json(self, sql, params={}):
-        self.print_sql('array', sql, params)
+    def query_array_json(self, sql, params=None, verbose=True):
+        if params is None:
+            params = {}
+
+        if verbose:
+            self.print_sql('array', sql, params)
+
         wrapped_sql = self.query_wrap_array(sql)
+
         try:
             with self.pool.connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(wrapped_sql, params)
-                    json = cur.fetchone()
-                    return json[0] if json else []
+
+                    result = cur.fetchone()
+
+                    return result[0] if result else []
+
         except Exception as err:
             self.print_sql_err(err)
             raise
 
     # Return single JSON object
-    def query_object_json(self, sql, params={}):
-        self.print_sql('json', sql, params)
-        self.print_params(params)
+    def query_object_json(self, sql, params=None, verbose=True):
+        if params is None:
+            params = {}
+
+        if verbose:
+            self.print_sql('json', sql, params)
+            self.print_params(params)
+
         wrapped_sql = self.query_wrap_object(sql)
+
         try:
             with self.pool.connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(wrapped_sql, params)
-                    json = cur.fetchone()
-                    return json[0] if json else {}
+
+                    result = cur.fetchone()
+
+                    return result[0] if result else {}
+
         except Exception as err:
             self.print_sql_err(err)
             raise
 
     # Return single value
-    def query_value(self, sql, params={}):
-        self.print_sql('value', sql, params)
+    def query_value(self, sql, params=None, verbose=True):
+        if params is None:
+            params = {}
+
+        if verbose:
+            self.print_sql('value', sql, params)
+
         try:
             with self.pool.connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(sql, params)
+
                     result = cur.fetchone()
+
                     if result is None:
-                        print("⚠️ No result returned from DB")
+                        print('⚠️ No result returned from DB')
                         return None
+
                     return result[0]
+
         except Exception as err:
             self.print_sql_err(err)
             raise
@@ -111,30 +170,71 @@ class Db:
     # Wrap SQL for single JSON object
     def query_wrap_object(self, template):
         sql = f"""
-        (SELECT COALESCE(row_to_json(object_row),'{{}}'::json) FROM (
-        {template}
-        ) object_row);
+        (
+            SELECT COALESCE(
+                row_to_json(object_row),
+                '{{}}'::json
+            )
+            FROM (
+                {template}
+            ) object_row
+        );
         """
+
         return sql
 
     # Wrap SQL for array of JSON objects
     def query_wrap_array(self, template):
         sql = f"""
-        (SELECT COALESCE(array_to_json(array_agg(row_to_json(array_row))),'[]'::json) FROM (
-        {template}
-        ) array_row);
+        (
+            SELECT COALESCE(
+                array_to_json(
+                    array_agg(
+                        row_to_json(array_row)
+                    )
+                ),
+                '[]'::json
+            )
+            FROM (
+                {template}
+            ) array_row
+        );
         """
+
         return sql
 
     # Print SQL errors
     def print_sql_err(self, err):
-        err_type, err_obj, traceback_obj = sys.exc_info()
-        line_num = traceback_obj.tb_lineno
-        print("\npsycopg ERROR:", err, "on line number:", line_num)
-        print("psycopg traceback:", traceback_obj, "-- type:", err_type)
-        print("pgerror:", getattr(err, 'pgerror', None))
-        print("pgcode:", getattr(err, 'pgcode', None), "\n")
+        _, _, traceback_obj = sys.exc_info()
+
+        line_num = (
+            traceback_obj.tb_lineno
+            if traceback_obj
+            else 'unknown'
+        )
+
+        print(
+            '\npsycopg ERROR:',
+            err,
+            'on line number:',
+            line_num
+        )
+
+        print(
+            'psycopg traceback:',
+            traceback_obj
+        )
+
+        print(
+            'pgerror:',
+            getattr(err, 'pgerror', None)
+        )
+
+        print(
+            'pgcode:',
+            getattr(err, 'pgcode', None),
+            '\n'
+        )
 
 
-# Instantiate Db
 db = Db()

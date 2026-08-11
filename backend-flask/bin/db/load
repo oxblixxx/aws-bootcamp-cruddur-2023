@@ -1,16 +1,35 @@
-#! /usr/bin/bash
-### HERE IS THE COMPILATION OF THE 4 DB SCRIPTS
-set -e # stop if it fails at any point
+#!/usr/bin/bash
+
+### HERE IS THE COMPILATION OF THE DB SCRIPTS
+
+set -e
 
 CYAN='\033[1;36m'
 NO_COLOR='\033[0m'
 LABEL="db-setup"
+
 printf "${CYAN}==== ${LABEL}${NO_COLOR}\n"
 
 bin_path="$(realpath .)"
+project_root="$(realpath "$bin_path/../..")"
 
 source "$bin_path/drop"
 source "$bin_path/create"
 source "$bin_path/schema-load"
 source "$bin_path/seed"
-python3 "$bin_path/update_cognito_user_ids"
+
+export AWS_COGNITO_USER_POOL_ID=us-east-1_4RnA4Ed2q
+
+source venv/bin/activate
+
+pip install -r "$project_root/requirements.txt"
+
+PYTHONPATH="$project_root" python3 "$bin_path/update_cognito_user_ids"
+echo "===================="
+echo "cognito user id done"
+echo "===================="
+
+PYTHONPATH="$project_root" python3 "$bin_path/migrate"
+echo "cognito user id done"
+
+deactivate

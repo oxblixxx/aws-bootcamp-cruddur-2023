@@ -2,6 +2,17 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 DROP TABLE IF EXISTS public.users;
 DROP TABLE IF EXISTS public.activities;
+DROP TABLE IF EXISTS public.schema_information;
+
+
+CREATE TABLE public.schema_information (
+  id INTEGER PRIMARY KEY,
+  last_successful_run BIGINT NOT NULL DEFAULT 0
+);
+
+INSERT INTO public.schema_information (id, last_successful_run)
+VALUES (1, 0);
+
 
 CREATE TABLE public.users (
   uuid UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -21,5 +32,5 @@ CREATE TABLE public.activities (
   likes_count integer DEFAULT 0,
   reply_to_activity_uuid integer,
   expires_at TIMESTAMP,
-  created_at TIMESTAMP default current_timestamp NOT NULL
+  created_at TIMESTAMP DEFAULT current_timestamp NOT NULL
 );
