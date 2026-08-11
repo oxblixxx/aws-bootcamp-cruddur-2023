@@ -1,5 +1,5 @@
 import './UserFeedPage.css';
-import React from "react";
+import React from 'react';
 import { useParams } from 'react-router-dom';
 
 import DesktopNavigation from '../components/DesktopNavigation';
@@ -25,7 +25,7 @@ export default function UserFeedPage() {
   const loadData = async () => {
     try {
       // React Router route is /:handle
-      // This means params.handle can be either:
+      // params.handle can be either:
       // "oxblixxxx" or "@oxblixxxx"
       const handle = params.handle.startsWith('@')
         ? params.handle
@@ -39,13 +39,13 @@ export default function UserFeedPage() {
 
       await getAccessToken();
 
-      const access_token = localStorage.getItem("access_token");
+      const access_token = localStorage.getItem('access_token');
 
       const res = await fetch(backend_url, {
+        method: 'GET',
         headers: {
-          Authorization: `Bearer ${access_token}`
+          Authorization: `Bearer ${access_token}`,
         },
-        method: "GET"
       });
 
       const resJson = await res.json();
@@ -78,11 +78,11 @@ export default function UserFeedPage() {
     <article>
       <DesktopNavigation
         user={user}
-        active={'profile'}
+        active="profile"
         setPopped={setPopped}
       />
 
-      <div className='content'>
+      <div className="content">
         <ActivityForm
           popped={popped}
           setActivities={setActivities}
@@ -94,7 +94,7 @@ export default function UserFeedPage() {
           setPopped={setPoppedProfile}
         />
 
-        <div className='activity_feed'>
+        <div className="activity_feed">
           <ProfileHeading
             setPopped={setPoppedProfile}
             profile={profile}
@@ -106,9 +106,7 @@ export default function UserFeedPage() {
         </div>
       </div>
 
-      <DesktopSidebar
-        user={user}
-      />
+      <DesktopSidebar user={user} />
     </article>
   );
 }
