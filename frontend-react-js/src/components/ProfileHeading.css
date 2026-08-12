@@ -1,16 +1,5 @@
 .profile_heading {
-  padding-bottom: 0px;
-}
-.profile_heading .avatar {
-  position: absolute;
-  bottom:-74px;
-  left: 16px;
-}
-.profile_heading .avatar img {
-  width: 148px;
-  height: 148px;
-  border-radius: 999px;
-  border: solid 8px var(--fg);
+  padding-bottom: 0;
 }
 
 .profile_heading .banner {
@@ -18,10 +7,23 @@
   height: 200px;
 }
 
+.profile_heading .avatar {
+  position: absolute;
+  bottom: -74px;
+  left: 16px;
+}
+
+.profile_heading .avatar img {
+  width: 148px;
+  height: 148px;
+  border-radius: 999px;
+  border: solid 8px var(--fg);
+}
+
 .profile_heading .info {
   display: flex;
   flex-direction: row;
-  align-items: start;
+  align-items: flex-start;
   padding: 16px;
 }
 
@@ -33,13 +35,15 @@
 .profile_heading .info .id .display_name {
   font-size: 24px;
   font-weight: bold;
-  color: rgb(255,255,255);
+  color: rgb(255, 255, 255);
 }
+
 .profile_heading .info .id .handle {
   font-size: 16px;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
 }
-.profile_heading .bio {
+
+.profile_heading .info .bio {
   padding: 16px;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
 }

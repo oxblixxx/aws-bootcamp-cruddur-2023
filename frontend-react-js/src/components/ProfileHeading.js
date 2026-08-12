@@ -25,10 +25,6 @@ export default function ProfileHeading(props) {
             src="https://assets.mustaphaops.online/avatars/lemon.jpg"
             alt="Profile"
           />
-          <img
-            src="https://assets.mustaphaops.online/avatars/pelumi.jpg"
-            alt="Profile"
-          />
         </div>
       </div>
 
