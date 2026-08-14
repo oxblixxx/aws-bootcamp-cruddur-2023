@@ -1,0 +1,192 @@
+name: Gitleaks Scan
+
+on: push:
+  branches:
+    - main-branch
+
+jobs:
+  scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    container:
+      image: zricethezav/gitleaks:latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup environment
+        run: |
+          #sudo apt-get update
+          apk add jq
+      - name: Run Gitleaks Scan
+        id: gitleaks
+        run: |
+          git config --global --add safe.directory /__w/HungerBuddy/HungerBuddy
+          gitleaks detect \
+            --source=. \
+            --config .gitleaks.toml \
+            --verbose \
+            --report-format json \
+            --report-path report.json \
+            --exit-code 1
+        continue-on-error: 
+  
+      - name: Debug report
+        if: always()
+        run: |
+          echo "===== report.json ====="
+          cat report.json
+      - name: Create Summary
+        if: always()
+        run: |
+          echo "## 🚨 Gitleaks Scan Results" >> "$GITHUB_STEP_SUMMARY"
+      
+          if [ ! -f report.json ] || [ "$(jq length report.json)" -eq 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "✅ No secrets detected." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+      
+          TOTAL=$(jq length report.json)
+      
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Total Findings:** $TOTAL" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+      
+          #################################################
+          # Summary by file
+          #################################################
+      
+          echo "### Affected Files" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+      
+          echo "|      File       |           Findings            |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----------------|------------------------------:|" >> "$GITHUB_STEP_SUMMARY"
+      
+          jq -r '
+            sort_by(.File)
+            | group_by(.File)
+            | .[]
+            | "| `\(.[0].File)` | \(length) |"
+          ' report.json >> "$GITHUB_STEP_SUMMARY"
+      
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+      
+          #################################################
+          # Detailed findings
+          #################################################
+      
+          echo "### Findings" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+      
+          jq -r '
+            sort_by(.File, .StartLine)
+            | group_by(.File)
+            | .[]
+            | "#### 📄 `\(.[0].File)`",
+              "",
+              "| Line | Rule | Context | Commit |",
+              "|-----:|------|---------|--------|",
+              (
+                .[]
+                | . as $f
+                | (($f.Match | sub($f.Secret; "***REDACTED***"))[0:80]) as $context
+                | "| \($f.StartLine) | `\($f.RuleID)` | `\($context)` | `\($f.Commit[0:7])` |"
+              ),
+              ""
+          ' report.json >> "$GITHUB_STEP_SUMMARY"
+      
+          echo "> **Note**" >> "$GITHUB_STEP_SUMMARY"
+          echo "> - Secrets have been redacted from this report." >> "$GITHUB_STEP_SUMMARY"
+          echo "> - Use the file path and line number to locate the finding." >> "$GITHUB_STEP_SUMMARY"
+          echo "===== SUMMARY ====="
+          cat "$GITHUB_STEP_SUMMARY"
+          
+          # Export values as job outputs
+          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+          
+          FILES=$(jq -r '
+            sort_by(.File)
+            | group_by(.File)
+            | map("• \(.[0].File) (\(length))")
+            | join("\n")
+          ' report.json)
+          
+          {
+            echo "files<<EOF"
+            echo "$FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          # echo "===== SUMMARY ====="
+          # cat "$GITHUB_STEP_SUMMARY"
+          #   # Export values for later jobs
+          # echo "GITLEAKS_TOTAL=$TOTAL" >> "$GITHUB_ENV"
+          
+          # jq -r '
+          #   sort_by(.File)
+          #   | group_by(.File)
+          #   | map("• \(.[0].File) (\(length))")
+          #   | join("\n")
+          # ' report.json > affected_files.txt
+          
+      # - name: Upload Gitleaks Summary
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: gitleaks-summary
+      #     path: affected_files.txt
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && steps.gitleaks.outcome == 'failure'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('./report.json', 'utf8'));
+            const message = [
+              "### 🚨 Gitleaks detected secrets",
+              "| File | Line | Secret Type |",
+              "|------|------|-------------|",
+              ...report.map(finding => 
+                `| \`${finding.File}\` | ${finding.StartLine} | ${finding.RuleID} |`
+              )
+            ].join('\n');
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+  notify-teams:
+    name: Notify Teams
+    runs-on: ubuntu-latest
+    needs: [scan]
+    if: always()
+  
+    steps:
+      - name: Notify Telegram
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: 7221450929
+          token: 8222954056:AAGWuThU5DCIpmNDDDSz1pYBaypzYSY2kZQ
+          format: markdown
+  
+          message: |
+            🚨 *Gitleaks Scan Report*
+  
+            📦 *Repository:* `${{ github.repository }}`
+            🌿 *Branch:* `${{ github.ref_name }}`
+            👤 *Author:* `${{ github.actor }}`
+  
+            ❗ *Workflow Status:* `${{ needs.scan.result }}`
+  
+            🔍 *Total Findings:* `${{ needs.scan.outputs.total }}`
+  
+            📁 *Affected Files*
+            ```
+            ${{ needs.scan.outputs.files }}
+            ```
+  
+            🔗 *View Workflow*
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

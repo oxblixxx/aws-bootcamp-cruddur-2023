@@ -1,0 +1,203 @@
+#!/bin/bash
+
+set -e
+
+ALB_NAME="cruddur-alb"
+ALB_SG_NAME="cruddur-alb-sg"
+BACKEND_TG_NAME="backend-flask-tg"
+FRONTEND_TG_NAME="frontend-flask-tg"
+
+BACKEND_APP_PORT=4567
+FRONTEND_APP_PORT=3000
+BACKEND_HEALTH_CHECK_PATH="/api/health-check"
+FRONTEND_HEALTH_CHECK_PATH="/"
+
+echo "======================================"
+echo "Fetching Default VPC"
+echo "======================================"
+
+DEFAULT_VPC_ID=$(aws ec2 describe-vpcs \
+  --filters "Name=is-default,Values=true" \
+  --query "Vpcs[0].VpcId" \
+  --output text)
+
+echo "VPC: $DEFAULT_VPC_ID"
+
+echo "======================================"
+echo "Fetching Subnets"
+echo "======================================"
+
+DEFAULT_SUBNET_IDS=$(aws ec2 describe-subnets \
+  --filters "Name=vpc-id,Values=$DEFAULT_VPC_ID" \
+  --query 'Subnets[*].SubnetId' \
+  --output text)
+
+echo "Subnets: $DEFAULT_SUBNET_IDS"
+
+read -r -a SUBNET_ARRAY <<< "$DEFAULT_SUBNET_IDS"
+
+echo "======================================"
+echo "Checking Security Group"
+echo "======================================"
+
+ALB_SG_ID=$(aws ec2 describe-security-groups \
+  --filters \
+    "Name=vpc-id,Values=$DEFAULT_VPC_ID" \
+    "Name=group-name,Values=$ALB_SG_NAME" \
+  --query 'SecurityGroups[0].GroupId' \
+  --output text 2>/dev/null || true)
+
+if [[ -z "$ALB_SG_ID" || "$ALB_SG_ID" == "None" ]]; then
+  echo "Creating Security Group..."
+
+  ALB_SG_ID=$(aws ec2 create-security-group \
+    --group-name "$ALB_SG_NAME" \
+    --description "Cruddur ALB Security Group" \
+    --vpc-id "$DEFAULT_VPC_ID" \
+    --query 'GroupId' \
+    --output text)
+
+  aws ec2 authorize-security-group-ingress \
+    --group-id "$ALB_SG_ID" \
+    --protocol tcp \
+    --port 80 \
+    --cidr 0.0.0.0/0
+
+  echo "Created Security Group: $ALB_SG_ID"
+else
+  echo "Security Group already exists: $ALB_SG_ID"
+fi
+
+echo "======================================"
+echo "Checking ALB"
+echo "======================================"
+
+ALB_ARN=$(aws elbv2 describe-load-balancers \
+  --names "$ALB_NAME" \
+  --query 'LoadBalancers[0].LoadBalancerArn' \
+  --output text 2>/dev/null || true)
+
+if [[ -z "$ALB_ARN" || "$ALB_ARN" == "None" ]]; then
+
+  echo "Creating ALB..."
+
+  ALB_ARN=$(aws elbv2 create-load-balancer \
+    --name "$ALB_NAME" \
+    --type application \
+    --scheme internet-facing \
+    --subnets "${SUBNET_ARRAY[@]}" \
+    --security-groups "$ALB_SG_ID" \
+    --query 'LoadBalancers[0].LoadBalancerArn' \
+    --output text)
+
+  echo "Created ALB"
+else
+  echo "ALB already exists"
+fi
+
+ALB_DNS=$(aws elbv2 describe-load-balancers \
+  --names "$ALB_NAME" \
+  --query 'LoadBalancers[0].DNSName' \
+  --output text)
+
+echo "======================================"
+echo "Checking BACKEND Target Group"
+echo "======================================"
+BACKEND_TG_ARN=$(aws elbv2 describe-target-groups \
+  --names "$BACKEND_TG_NAME" \
+  --query 'TargetGroups[0].TargetGroupArn' \
+  --output text 2>/dev/null || true)
+
+if [[ -z "$BACKEND_TG_ARN" || "$BACKEND_TG_ARN" == "None" ]]; then
+
+  echo "Creating Target Group..."
+
+  BACKEND_TG_ARN=$(aws elbv2 create-target-group \
+    --name "$BACKEND_TG_NAME" \
+    --protocol HTTP \
+    --port "$BACKEND_APP_PORT" \
+    --target-type ip \
+    --vpc-id "$DEFAULT_VPC_ID" \
+    --health-check-path "$BACKEND_HEALTH_CHECK_PATH" \
+    --query 'TargetGroups[0].TargetGroupArn' \
+    --output text)
+
+  echo "Created Target Group"
+else
+  echo "Target Group already exists"
+fi
+
+echo "======================================"
+echo "Checking FRONTEND Target Group"
+echo "======================================"
+
+FRONTEND_TG_ARN=$(aws elbv2 describe-target-groups \
+  --names "$FRONTEND_TG_NAME" \
+  --query 'TargetGroups[0].TargetGroupArn' \
+  --output text 2>/dev/null || true)
+
+if [[ -z "$FRONTEND_TG_ARN" || "$FRONTEND_TG_ARN" == "None" ]]; then
+
+  echo "Creating Target Group..."
+
+  FRONTEND_TG_ARN=$(aws elbv2 create-target-group \
+    --name "$FRONTEND_TG_NAME" \
+    --protocol HTTP \
+    --port "$FRONTEND_APP_PORT" \
+    --target-type ip \
+    --vpc-id "$DEFAULT_VPC_ID" \
+    --health-check-path "$FRONTEND_HEALTH_CHECK_PATH" \
+    --query 'TargetGroups[0].TargetGroupArn' \
+    --output text)
+
+  echo "FRONTEND Created Target Group"
+else
+  echo "FRONTNED Target Group already exists"
+fi
+
+
+echo "======================================"
+echo "Checking Listener"
+echo "======================================"
+
+LISTENER_ARN=$(aws elbv2 describe-listeners \
+  --load-balancer-arn "$ALB_ARN" \
+  --query 'Listeners[?Port==`80`].ListenerArn | [0]' \
+  --output text 2>/dev/null || true)
+
+if [[ -z "$LISTENER_ARN" || "$LISTENER_ARN" == "None" ]]; then
+
+  echo "Creating Listener..."
+
+  BACKEND_LISTENER_ARN=$(aws elbv2 create-listener \
+    --load-balancer-arn "$ALB_ARN" \
+    --protocol HTTP \
+    --port 4567 \
+    --default-actions Type=forward,TargetGroupArn="$BACKEND_TG_ARN" \
+    --query 'Listeners[0].ListenerArn' \
+    --output text)
+
+  FRONTEND_LISTENER_ARN=$(aws elbv2 create-listener \
+    --load-balancer-arn "$ALB_ARN" \
+    --protocol HTTP \
+    --port 3000 \
+    --default-actions Type=forward,TargetGroupArn="$FRONTEND_TG_ARN" \
+    --query 'Listeners[0].ListenerArn' \
+    --output text)
+
+  echo "Created Listener"
+else
+  echo "Listener already exists"
+fi
+
+echo "======================================"
+echo "RESULTS"
+echo "======================================"
+
+echo "ALB ARN      : $ALB_ARN"
+echo "ALB DNS      : $ALB_DNS"
+echo "BACKEND TG ARN       : $BACKEND_TG_ARN"
+echo "FRONTEND TG ARN       : $FRONTNED_TG_ARN"
+
+
+echo "DONE"
