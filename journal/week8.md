@@ -260,6 +260,60 @@ Activate the latest Fastly configuration version.
 
 ---
 
+
+
+# Building the client side for uploading of images!
+Here is the current architecture for the uploading of images by users to s3.
+```sh
+                     Your application backend
+                     ┌─────────────────────┐
+                     │                     │
+Browser ──POST──────►│ API Gateway         │
+                     │       │             │
+                     │       ▼             │
+                     │     Lambda          │
+                     │       │             │
+                     │       ▼             │
+                     │ Generate URL        │
+                     └───────┬─────────────┘
+                             │
+                             ▼
+                       Presigned URL
+                             │
+                             │
+Browser ◄────────────────────┘
+   │
+   │ PUT vacation.jpg
+   ▼
+  S3
+```
+
+Here is a 
+1. [blog-1](https://aws.amazon.com/blogs/compute/uploading-to-amazon-s3-directly-from-a-web-or-mobile-application/)
+2. [blog-2](https://docs.aws.amazon.com/apigateway/latest/developerguide/integration-request-basic-setup.html)
+3. [blog-3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html?utm_source=chatgpt.com)
+
+Why this approach? It keeps away the secrets away from the clients, scales and simple. 
+
+- CREATE AN API GATEWAY
+- PROCEED TO INTEGRATIONS, THEN CHOOSE LAMDA? WE DIDNT CREATE ONE.
+- PROCEED TO LAMDA PAGE, CREATE A LAMDA, FOR HERE, THE
+- give permission access, using puts3 to the executioner role 
+- add env as well. Then click test, to ensure there is a s3 presigned URL
+- Now, for API gateway, we need to add an authorizer, which uses JWT, otherwise, anyone which isnt in our AWS COGNITO will be able to invoke the request without authorization. The JWT ensures only authenticated users can invoke the URL. 
+- then later proceed to API GW, choose the firstly created lamda, 
+- then go to authorizations, add the authorizer lamda that uploaded.
+- then go to routes and add an authorizer!
+Here is the [jwt-cognito-authorizer-docs](https://github.com/awslabs/aws-jwt-verify) 
+
+4. [blog-3](https://blog.devops.dev/building-a-secure-api-with-api-gateway-and-lambda-authorizer-0ff022ec6f7e)
+
+5. [blog-4](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-lambda-authorizer.html)
+
+6. 
+
+
+
 # Troubleshooting
 
 ---
@@ -594,3 +648,11 @@ Got this error, I simply changed the `runtime: lambda.Runtime.NODEJS_18_X`  to `
 
 
 create and avatar  bucket, change name to upload bucket, change .env and .env.example
+
+
+
+
+
+
+
+CREATE MIGRATIONS FILE, AND MIGRATION SCRIPT TO ADD 
