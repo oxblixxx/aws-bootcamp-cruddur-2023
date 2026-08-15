@@ -302,9 +302,13 @@ Why this approach? It keeps away the secrets away from the clients, scales and s
 - add env as well. Then click test, to ensure there is a s3 presigned URL
 - Now, for API gateway, we need to add an authorizer, which uses JWT, otherwise, anyone which isnt in our AWS COGNITO will be able to invoke the request without authorization. The JWT ensures only authenticated users can invoke the URL. 
 - then later proceed to API GW, choose the firstly created lamda, 
-- then go to authorizations, add the authorizer lamda that uploaded.
+- then go to authorizations, add the authorizer lamda that uploaded, leave values as default. NB: IF AUTO-DEPLOY IS TURNED ON, YOU CAN'T MANUALLY DEPLOY
 - then go to routes and add an authorizer!
 Here is the [jwt-cognito-authorizer-docs](https://github.com/awslabs/aws-jwt-verify) 
+- update docker compose FRONTEND  with API-GATEWAY ENV `REACT_APP_API_GATEWAY_ENDPOINT_URL`  
+- navigate to s3, add a bucket cors policy
+
+- SETUP PROXY IN API GATEWAY
 
 4. [blog-3](https://blog.devops.dev/building-a-secure-api-with-api-gateway-and-lambda-authorizer-0ff022ec6f7e)
 
@@ -656,3 +660,13 @@ create and avatar  bucket, change name to upload bucket, change .env and .env.ex
 
 
 CREATE MIGRATIONS FILE, AND MIGRATION SCRIPT TO ADD 
+
+
+
+
+
+
+
+
+Access to fetch at 'https://s3.amazonaws.com/assets.mustaphaops.online/e4187488-d031-70c2-95b1-1c460629bb48.jpeg?x-amzn-trace-id=Root%3D1-6a80ae4f-20e9001114293eaa7b8b3d96%3BParent%3D475b624c40105526%3BSampled%3D0%3BLineage%3D1%3A280d3843%3A0&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAS2FVS7AS6NIJC4MM%2F20260815%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260815T182207Z&X-Amz-Expires=300&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFMaCXVzLWVhc3QtMSJHMEUCIC6GkVPqYPP4%2BzpW1PaJYqduBuNyreaZctV0ehvkuWTeAiEAv8T4uDQoq6BoRUkJ%2FJ71oZ0%2F6RvdCAUj22hS2Nvs%2FUMq%2BAMIGxAAGgwxOTM2NTQzNTYwMDUiDGeNpmkm%2BJaiXhoYtSrVAwgl9G9MldSjRltxSuu%2FRceDkChr6tDWwcGbPvJwW47UQB4xL%2Btc3sUhp1ucxpeoOwxj190gq9GhkSj1DMjpPyBtXzZEaQmXLOFwvokp9auxID4szYgGdH6ER98FPpY1mWZrqJg585HOwrj%2FgGpjasPWftUbRvmvQzZbcuY7uta1a%2F5zA5Rup41GvtBqMcg8PROq29HE60CniIobiMLOIS2nT42rs7hH%2B%2Fepfk3jCUQ3wWi0oySfj61kkGkNYPSXI4WnDd4ZJZaeAZ5Ybb1DCW5xnGlvqhkbkIw04RhFPaTP7MfuICPdFSTXaoFKEtu%2BWeZpmFWHNwmg1SPFfsYNM4g6E3HtiR%2FwSOfjeP36hp6Oc0CbsxczJU0xxXF%2BYQ5hVkTwKnr8g0Y15%2F2ajkfvFlY%2FdZnA%2BFvoVRQY9ZCuubbzovOYe4mxFUWhmbWvVr2WtzwkRDansgNfkqbnKva4nA9GVf78yOMWHejTfk2GX6G%2FlF09arpgbhxETNLNV1YcDWWkQc2GRagu3V7UN%2FTGMBMZnKeXwPO%2Bdg0ufcCKLT9QGZF0gVQZGt%2B4YwMaAefLztKWFylaEvL0n9hAQgx61v%2BGUC1az7bVdgWddgUasagY6wKcz2swsdyC1AY6oQEKSKvigog6eVSECKK5olQuquOyd8VzM784xBHI86dGB%2FUc5HEn6IjdGuWYFSWPr5f7oMgkJGRyCq3WHj6K9YBNcb0gD%2BQovz40HgYolFl7qZfJk%2FtpCfg8xFeq9%2B85SGGUsnoK9sVdP1UknBldLqHiwBwLNhBzlq8DnD3vcijItYys%2Fr845xKgdXEvX6LK8%2BGVsVlhvKDW3haXLKHLJPprsA%3D%3D&X-Amz-SignedHeaders=host&X-Amz-Signature=9b48822b6e3f0a5f344cd921cc1e4a7a65f7c982f53dd2d39fb8b3b61b56035a' from origin 'https://front.mustaphaops.online' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+ProfileForm.js:70  PUT https://s3.amazonaws.com/assets.mustaphaops.online/e4187488-d031-70c2-95b1-1c460629bb48.jpeg?x-amzn-trace-id=Root%3D1-6a80ae4f-20e9001114293eaa7b8b3d96%3BParent%3D475b624c40105526%3BSampled%3D0%3BLineage%3D1%3A280d3843%3A0&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAS2FVS7AS6NIJC4MM%2F20260815%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260815T182207Z&X-Amz-Expires=300&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFMaCXVzLWVhc3QtMSJHMEUCIC6GkVPqYPP4%2BzpW1PaJYqduBuNyreaZctV0ehvkuWTeAiEAv8T4uDQoq6BoRUkJ%2FJ71oZ0%2F6RvdCAUj22hS2Nvs%2FUMq%2BAMIGxAAGgwxOTM2NTQzNTYwMDUiDGeNpmkm%2BJaiXhoYtSrVAwgl9G9MldSjRltxSuu%2FRceDkChr6tDWwcGbPvJwW47UQB4xL%2Btc3sUhp1ucxpeoOwxj190gq9GhkSj1DMjpPyBtXzZEaQmXLOFwvokp9auxID4szYgGdH6ER98FPpY1mWZrqJg585HOwrj%2FgGpjasPWftUbRvmvQzZbcuY7uta1a%2F5zA5Rup41GvtBqMcg8PROq29HE60CniIobiMLOIS2nT42rs7hH%2B%2Fepfk3jCUQ3wWi0oySfj61kkGkNYPSXI4WnDd4ZJZaeAZ5Ybb1DCW5xnGlvqhkbkIw04RhFPaTP7MfuICPdFSTXaoFKEtu%2BWeZpmFWHNwmg1SPFfsYNM4g6E3HtiR%2FwSOfjeP36hp6Oc0CbsxczJU0xxXF%2BYQ5hVkTwKnr8g0Y15%2F2ajkfvFlY%2FdZnA%2BFvoVRQY9ZCuubbzovOYe4mxFUWhmbWvVr2WtzwkRDansgNfkqbnKva4nA9GVf78yOMWHejTfk2GX6G%2FlF09arpgbhxETNLNV1YcDWWkQc2GRagu3V7UN%2FTGMBMZnKeXwPO%2Bdg0ufcCKLT9QGZF0gVQZGt%2B4YwMaAefLztKWFylaEvL0n9hAQgx61v%2BGUC1az7bVdgWddgUasagY6wKcz2swsdyC1AY6oQEKSKvigog6eVSECKK5olQuquOyd8VzM784xBHI86dGB%2FUc5HEn6IjdGuWYFSWPr5f7oMgkJGRyCq3WHj6K9YBNcb0gD%2BQovz40HgYolFl7qZfJk%2FtpCfg8xFeq9%2B85SGGUsnoK9sVdP1UknBldLqHiwBwLNhBzlq8DnD3vcijItYys%2Fr845xKgdXEvX6LK8%2BGVsVlhvKDW3haXLKHLJPprsA%3D%3D&X-Amz-SignedHeaders=host&X-Amz-Signature=9b48822b6e3f0a5f344cd921cc1e4a7a65f7c982f53dd2d39fb8b3b61b56035a net::ERR_FAILED
