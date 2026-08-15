@@ -314,7 +314,7 @@ Here is the [jwt-cognito-authorizer-docs](https://github.com/awslabs/aws-jwt-ver
 
 5. [blog-4](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-lambda-authorizer.html)
 
-6. 
+6.  Okay
 
 
 
