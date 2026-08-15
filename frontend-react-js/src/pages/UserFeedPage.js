@@ -54,6 +54,7 @@ export default function UserFeedPage() {
       console.log('Profile API response:', resJson);
 
       if (res.status === 200) {
+        console.log('setprofile',resJson.profile)
         setProfile(resJson.profile);
         setActivities(resJson.activities);
       } else {
