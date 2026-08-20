@@ -1,4 +1,4 @@
-# Buildspec runs in the build stage of your pipeline.
+# Buildspec runs in the build stage of your pipeline. It builds the Docker image and pushes it to ECR. It also creates an imagedefinitions.json file that is used by the deploy stage of your pipeline.
 version: 0.2
 phases:
   install:
