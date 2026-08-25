@@ -4,6 +4,12 @@ AWSTemplateFormatVersion: 2010-09-09
 Description:
   This is the VPC for CRUDDUR APP, WHICH CONISTS OF 2 PUBLIC SUBNETS, 2 PRIVATE SUBNETS, 1 INTERNET GATEWAY, 1 NAT GATEWAY, 1 ROUTE TABLE FOR PUBLIC SUBNETS AND 1 ROUTE TABLE FOR PRIVATE SUBNETS.
 
+Parameters: 
+  AvailabilityZones:
+    Type: CommaDelimitedList
+    Description: Availability Zones to use
+    Default: us-east-1a,us-east-1b,us-east-1c,us-east-1d,us-east-1e,us-east-1f
+
 Resources:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-vpc.html
   CruddurVPC:
@@ -23,6 +29,7 @@ Resources:
     Properties:
       VpcId: !Ref CruddurVPC
       AmazonProvidedIpv6CidrBlock: true
+
  # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-internetgateway.html 
   CruddurInternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -95,6 +102,12 @@ Resources:
       Ipv6CidrBlock: !Select [3, !Cidr [!Select [0, !GetAtt CruddurVPC.Ipv6CidrBlocks], 256, 64]]
       MapPublicIpOnLaunch: false
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      Tags:
+        - Key: Name 
+          Value: cruddur-private-subnet-2
+        - Key: Environment
+          Value: production
+
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-routetable.html
   CruddurPublicRouteTable:
@@ -146,44 +159,182 @@ Resources:
 
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-securitygroupingress.html
-  # CruddurPublicSgIngress1:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     CidrIp: 0.0.0.0/0
-  #     Description: Allow Http
-  #     FromPort: 80
-  #     GroupId: !Ref CruddurPublicSg
-  #     IpProtocol: tcp
-  #     ToPort: 80
+  # ============================================================
+  # ALB SECURITY GROUP
+  # ============================================================
 
-  # CruddurPublicSgEgress1:
-  #   Type: AWS::EC2::SecurityGroupEgress
-  #   Properties:
-  #     CidrIp: 10.10.0.0/20
-  #     Description: Allow HTTP to private application
-  #     FromPort: 80
-  #     GroupId: !Ref CruddurPublicSg
-  #     IpProtocol: tcp
-  #     ToPort: 80
+  CruddurALBSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Cruddur Application Load Balancer
+      VpcId: !Ref CruddurVPC
+      Tags:
+        - Key: Name
+          Value: cruddur-alb-sg
+        - Key: Environment
+          Value: production
+
+  # ------------------------------------------------------------
+  # ALB INGRESS - HTTP
+  # ------------------------------------------------------------
+
+  CruddurALBHttpIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      CidrIp: 0.0.0.0/0
+      Description: Allow HTTP from internet
+      FromPort: 80
+      GroupId: !Ref CruddurALBSg
+      IpProtocol: tcp
+      ToPort: 80
+
+  # ------------------------------------------------------------
+  # ALB INGRESS - HTTPS
+  # ------------------------------------------------------------
+
+  CruddurALBHttpsIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      CidrIp: 0.0.0.0/0
+      Description: Allow HTTPS from internet
+      FromPort: 443
+      GroupId: !Ref CruddurALBSg
+      IpProtocol: tcp
+      ToPort: 443
+
+  # ------------------------------------------------------------
+  # ALB EGRESS → BACKEND ECS :4567
+  # ------------------------------------------------------------
+
+  CruddurALBEcsBackendEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow ALB to reach backend ECS tasks
+      DestinationSecurityGroupId: !Ref CruddurEcsSg
+      FromPort: 4567
+      GroupId: !Ref CruddurALBSg
+      IpProtocol: tcp
+      ToPort: 4567
+
+  # ------------------------------------------------------------
+  # ALB EGRESS → FRONTEND ECS :3000
+  # ------------------------------------------------------------
+
+  CruddurALBEcsFrontendEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow ALB to reach frontend ECS tasks
+      DestinationSecurityGroupId: !Ref CruddurEcsSg
+      FromPort: 3000
+      GroupId: !Ref CruddurALBSg
+      IpProtocol: tcp
+      ToPort: 3000
 
 
-  # CruddurPrivateSgIngress1:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     CidrIp: 10.10.0.0/20
-  #     Description: Allow Http
-  #     FromPort: Inte
-  #     GroupId: String
-  #     GroupName: String
-  #     IpProtocol: String
+  # ============================================================
+  # ECS SECURITY GROUP
+  # ============================================================
 
-  # CruddurPrivateSgEggress1:
-  #   Type: AWS::EC2::SecurityGroupEgress
-  #   Properties:
-  #     CidrIp: 10.10.0.0/20
-  #     Description: Allow Http
-  #     FromPort: Inte
-  #     GroupId: String
-  #     GroupName: String
-  #     IpProtocol: String
+  CruddurEcsSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Cruddur ECS Fargate
+      VpcId: !Ref CruddurVPC
+      Tags:
+        - Key: Name
+          Value: cruddur-ecs-sg
+        - Key: Environment
+          Value: production
 
+  # ------------------------------------------------------------
+  # ECS INGRESS ← ALB :4567
+  # ------------------------------------------------------------
+
+  CruddurEcsBackendIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow backend traffic from ALB
+      SourceSecurityGroupId: !Ref CruddurALBSg
+      FromPort: 4567
+      GroupId: !Ref CruddurEcsSg
+      IpProtocol: tcp
+      ToPort: 4567
+
+  # ------------------------------------------------------------
+  # ECS INGRESS ← ALB :3000
+  # ------------------------------------------------------------
+
+  CruddurEcsFrontendIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow frontend traffic from ALB
+      SourceSecurityGroupId: !Ref CruddurALBSg
+      FromPort: 3000
+      GroupId: !Ref CruddurEcsSg
+      IpProtocol: tcp
+      ToPort: 3000
+
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-elasticloadbalancingv2-loadbalancer.html
+
+  CruddurALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      EnablePrefixForIpv6SourceNat: true
+      IpAddressType: dualstack
+      # LoadBalancerAttributes: 
+      #   - Key: routing.http.response.server.enabled
+      #     Value: "false"
+
+      #   - Key: routing.http.response.strict_transport_security.header_value
+      #     Value: "max-age=31536000; includeSubDomains"
+
+      #   - Key: routing.http.response.x_content_type_options.header_value
+      #     Value: nosniff
+
+      #   - Key: routing.http.response.x_frame_options.header_value
+      #     Value: DENY
+
+# Capacity is available ahead of demand, such as predictable high-traffic applications
+      # MinimumLoadBalancerCapacity: 
+      #   CapacityUnits: 10
+      Name: CruddurALB
+      Scheme: internet-facing
+      SecurityGroups: 
+        - !Ref CruddurALBSg
+      Subnets: 
+        - !Ref CruddurPublicSubnet1
+        - !Ref CruddurPublicSubnet2
+      Tags: 
+        - Key: Environment
+          Value: Production
+      Type: application
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-elasticloadbalancingv2-listener.html
+  CruddurHttp80:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      AlpnPolicy: 
+        - crudduralb
+      Certificates: 
+        - Certificate
+      DefaultActions: 
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-elasticloadbalancingv2-listener-redirectconfig.html
+      - Type: "redirect"
+        RedirectConfig:
+          Protocol: "HTTPS"
+          Port: 443
+          StatusCode: "HTTP_301"
+          LoadBalancerArn: !Ref myLoadBalancer
+          Port: 80
+          Protocol: "HTTP"
+      ListenerAttributes: 
+        - ListenerAttribute
+      LoadBalancerArn: !Ref
+      MutualAuthentication: 
+        MutualAuthentication
+      Port: Integer
+      Protocol: String
+      SslPolicy: String
+      Tags: 
+        - Tag
