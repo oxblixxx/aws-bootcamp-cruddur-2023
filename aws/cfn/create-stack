@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+#set -e
+## CREATE A STACK 
+##  ./create-stack <resource-directory>
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+CFN_DIR="$PROJECT_ROOT/aws/cfn/$1"
+
+CFN_PATH="$CFN_DIR/template.yaml"
+CONFIG_PATH="$CFN_DIR/config.toml"
+REGION="us-east-1"
+
+echo "CFN directory: $CFN_DIR"
+echo "Template: $CFN_PATH"
+echo "Config: $CONFIG_PATH"
+
+cfn-lint "$CFN_PATH"
+
+#BUCKET=$(cfn-toml key deploy.bucket -t "$CONFIG_PATH")
+#REGION=$(cfn-toml key deploy.region -t "$CONFIG_PATH")
+#STACK_NAME=$(cfn-toml key deploy.stack_name -t "$CONFIG_PATH")
+#  --s3-bucket "$BUCKET" \
+#  --s3-prefix "$1" \
+STACK_NAME="cruddur"
+
+
+aws cloudformation deploy \
+  --stack-name "$STACK_NAME" \
+  --region "$REGION" \
+  --template-file "$CFN_PATH" \
+  --no-execute-changeset \
+  --tags group="cruddur-$1" \
+  --capabilities CAPABILITY_NAMED_IAM
