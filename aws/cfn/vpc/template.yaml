@@ -1,0 +1,189 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Description:
+  This is the VPC for CRUDDUR APP, WHICH CONISTS OF 2 PUBLIC SUBNETS, 2 PRIVATE SUBNETS, 1 INTERNET GATEWAY, 1 NAT GATEWAY, 1 ROUTE TABLE FOR PUBLIC SUBNETS AND 1 ROUTE TABLE FOR PRIVATE SUBNETS.
+
+Resources:
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-vpc.html
+  CruddurVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.10.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: cruddur-vpc
+        - Key: Environment
+          Value: production
+
+  Crudduripv6CidrBlock:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      VpcId: !Ref CruddurVPC
+      AmazonProvidedIpv6CidrBlock: true
+ # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-internetgateway.html 
+  CruddurInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: cruddur-igw
+      - Key: Environment
+        Value: production
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-vpcgatewayattachment.html
+  CruddurVPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref CruddurVPC
+      InternetGatewayId: !Ref CruddurInternetGateway
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-subnet.html
+  CruddurPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref CruddurVPC
+      CidrBlock: 10.10.0.0/20
+      AssignIpv6AddressOnCreation: true
+      Ipv6CidrBlock: !Select [0, !Cidr [!Select [0, !GetAtt CruddurVPC.Ipv6CidrBlocks], 256, 64]]
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: cruddur-public-subnet-1
+        - Key: Environment  
+          Value: production
+  
+  CruddurPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref CruddurVPC
+      CidrBlock: 10.10.16.0/20
+      AssignIpv6AddressOnCreation: true
+      Ipv6CidrBlock: !Select [1, !Cidr [!Select [0, !GetAtt CruddurVPC.Ipv6CidrBlocks], 256, 64]]
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: cruddur-public-subnet-2
+        - Key: Environment
+          Value: production
+
+  CruddurPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref CruddurVPC
+      CidrBlock: 10.10.32.0/20
+      AssignIpv6AddressOnCreation: true
+      Ipv6CidrBlock: !Select [2, !Cidr [!Select [0, !GetAtt CruddurVPC.Ipv6CidrBlocks], 256, 64]]
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name 
+          Value: cruddur-private-subnet-1
+        - Key: Environment
+          Value: production
+
+  CruddurPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref CruddurVPC
+      CidrBlock: 10.10.48.0/20
+      AssignIpv6AddressOnCreation: true
+      Ipv6CidrBlock: !Select [3, !Cidr [!Select [0, !GetAtt CruddurVPC.Ipv6CidrBlocks], 256, 64]]
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-routetable.html
+  CruddurPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref CruddurVPC
+      Tags:
+        - Key: Name
+          Value: cruddur-public-route-table
+        - Key: Environment
+          Value: production
+
+  CruddurPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref CruddurVPC
+      Tags:
+        - Key: Name
+          Value: cruddur-private-route-table
+        - Key: Environment
+          Value: production
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-subnetroutetableassociation.html
+  CruddurPublicRouteAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref CruddurPublicRouteTable
+      SubnetId: !Ref CruddurPublicSubnet1
+
+  CruddurPublicRouteAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref CruddurPublicRouteTable
+      SubnetId: !Ref CruddurPublicSubnet2
+
+
+  CruddurPrivateRouteAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref CruddurPrivateRouteTable
+      SubnetId: !Ref CruddurPrivateSubnet1 
+      #VpcId: !Ref CruddurVPC
+
+  CruddurPrivateRouteAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref CruddurPrivateRouteTable
+      SubnetId: !Ref CruddurPrivateSubnet2 
+
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-securitygroupingress.html
+  # CruddurPublicSgIngress1:
+  #   Type: AWS::EC2::SecurityGroupIngress
+  #   Properties:
+  #     CidrIp: 0.0.0.0/0
+  #     Description: Allow Http
+  #     FromPort: 80
+  #     GroupId: !Ref CruddurPublicSg
+  #     IpProtocol: tcp
+  #     ToPort: 80
+
+  # CruddurPublicSgEgress1:
+  #   Type: AWS::EC2::SecurityGroupEgress
+  #   Properties:
+  #     CidrIp: 10.10.0.0/20
+  #     Description: Allow HTTP to private application
+  #     FromPort: 80
+  #     GroupId: !Ref CruddurPublicSg
+  #     IpProtocol: tcp
+  #     ToPort: 80
+
+
+  # CruddurPrivateSgIngress1:
+  #   Type: AWS::EC2::SecurityGroupIngress
+  #   Properties:
+  #     CidrIp: 10.10.0.0/20
+  #     Description: Allow Http
+  #     FromPort: Inte
+  #     GroupId: String
+  #     GroupName: String
+  #     IpProtocol: String
+
+  # CruddurPrivateSgEggress1:
+  #   Type: AWS::EC2::SecurityGroupEgress
+  #   Properties:
+  #     CidrIp: 10.10.0.0/20
+  #     Description: Allow Http
+  #     FromPort: Inte
+  #     GroupId: String
+  #     GroupName: String
+  #     IpProtocol: String
+
