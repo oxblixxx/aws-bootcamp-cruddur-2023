@@ -22,3 +22,5 @@ boto3
 python-jose
 
 pre-commit
+
+cfn-lint
