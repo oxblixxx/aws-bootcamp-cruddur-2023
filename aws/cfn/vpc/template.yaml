@@ -10,6 +10,12 @@ Parameters:
     Description: Availability Zones to use
     Default: us-east-1a,us-east-1b,us-east-1c,us-east-1d,us-east-1e,us-east-1f
 
+  AcmCertificateArn:
+    Type: String
+    Description: Availability Zones to use
+    Default: arn:aws:acm:us-east-1:193654356005:certificate/edb389be-6bbd-4536-bc22-d4f17109a16
+
+
 Resources:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-vpc.html
   CruddurVPC:
@@ -280,14 +286,15 @@ Resources:
   CruddurALB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      EnablePrefixForIpv6SourceNat: true
+      #EnablePrefixForIpv6SourceNat: on
       IpAddressType: dualstack
-      # LoadBalancerAttributes: 
+      LoadBalancerAttributes:
+      #ListenerAttributes: 
       #   - Key: routing.http.response.server.enabled
       #     Value: "false"
 
-      #   - Key: routing.http.response.strict_transport_security.header_value
-      #     Value: "max-age=31536000; includeSubDomains"
+        - Key: routing.http.response.strict_transport_security.header_value
+          Value: "max-age=31536000; includeSubDomains"
 
       #   - Key: routing.http.response.x_content_type_options.header_value
       #     Value: nosniff
@@ -311,30 +318,214 @@ Resources:
       Type: application
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-elasticloadbalancingv2-listener.html
-  CruddurHttp80:
+  CruddurHttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      AlpnPolicy: 
-        - crudduralb
-      Certificates: 
-        - Certificate
+      # AlpnPolicy: 
+      #   - crudduralb
+    #  Certificates:   # ONLY NEEDED BY HTTPS
       DefaultActions: 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-elasticloadbalancingv2-listener-redirectconfig.html
       - Type: "redirect"
         RedirectConfig:
-          Protocol: "HTTPS"
           Port: 443
           StatusCode: "HTTP_301"
-          LoadBalancerArn: !Ref myLoadBalancer
-          Port: 80
           Protocol: "HTTP"
-      ListenerAttributes: 
-        - ListenerAttribute
-      LoadBalancerArn: !Ref
-      MutualAuthentication: 
-        MutualAuthentication
-      Port: Integer
-      Protocol: String
-      SslPolicy: String
+      # ListenerAttributes: 
+      #   # Remove the Server header from ALB responses
+      #   - Key: routing.http.response.server.enabled
+      #     Value: "false"
+
+      #   # HSTS
+      #   - Key: routing.http.response.strict_transport_security.header_value
+      #     Value: "max-age=31536000; includeSubDomains"
+
+      #   # CORS
+      #   - Key: routing.http.response.access_control_allow_origin.header_value
+      #     Value: "*"
+
+      #   - Key: routing.http.response.access_control_allow_methods.header_value
+      #     Value: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+
+      #   - Key: routing.http.response.access_control_allow_headers.header_value
+      #     Value: "Content-Type,Authorization"
+
+      #   - Key: routing.http.response.access_control_allow_credentials.header_value
+      #     Value: "false"
+
+      #   - Key: routing.http.response.access_control_expose_headers.header_value
+      #     Value: "Content-Length,Content-Type"
+
+      #   - Key: routing.http.response.access_control_max_age.header_value
+      #     Value: "86400"
+
+      #   # Content Security Policy
+      #   - Key: routing.http.response.content_security_policy.header_value
+      #     Value: "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+
+      #   # Prevent MIME-type sniffing
+      #   - Key: routing.http.response.x_content_type_options.header_value
+      #     Value: "nosniff"
+
+      #   # Prevent clickjacking
+      #   - Key: routing.http.response.x_frame_options.header_value
+      #     Value: "DENY"
+
+      LoadBalancerArn: !Ref CruddurALB
+      # MutualAuthentication: 
+      #   MutualAuthentication
+      Port: 80
+      Protocol: HTTP
+# https://docs.aws.amazon.com/elasticloadbalancing/latest/application/describe-ssl-policies.html
+#      SslPolicy: ELBSecurityPolicy-TLS13-1-2-Res-PQ-2025-09   # ONLY NEEDED BY HTTPS
       Tags: 
-        - Tag
+        - Key: Environment
+          Value: Production
+
+  CruddurHttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates: 
+        - CertificateArn: !Ref AcmCertificateArn
+      DefaultActions: 
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-elasticloadbalancingv2-listener-redirectconfig.html
+        - Type: "forward"
+          TargetGroupArn: !Ref CruddurFrontendTG
+      # ListenerAttributes: 
+      #   # Remove the Server header from ALB responses
+      #   - Key: routing.http.response.server.enabled
+      #     Value: "false"
+
+      #   # HSTS
+      #   - Key: routing.http.response.strict_transport_security.header_value
+      #     Value: "max-age=31536000; includeSubDomains"
+
+      #   # CORS
+      #   - Key: routing.http.response.access_control_allow_origin.header_value
+      #     Value: "*"
+
+      #   - Key: routing.http.response.access_control_allow_methods.header_value
+      #     Value: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+
+      #   - Key: routing.http.response.access_control_allow_headers.header_value
+      #     Value: "Content-Type,Authorization"
+
+      #   - Key: routing.http.response.access_control_allow_credentials.header_value
+      #     Value: "false"
+
+      #   - Key: routing.http.response.access_control_expose_headers.header_value
+      #     Value: "Content-Length,Content-Type"
+
+      #   - Key: routing.http.response.access_control_max_age.header_value
+      #     Value: "86400"
+
+      #   # Content Security Policy
+      #   - Key: routing.http.response.content_security_policy.header_value
+      #     Value: "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+
+      #   # Prevent MIME-type sniffing
+      #   - Key: routing.http.response.x_content_type_options.header_value
+      #     Value: "nosniff"
+
+      #   # Prevent clickjacking
+      #   - Key: routing.http.response.x_frame_options.header_value
+      #     Value: "DENY"
+
+      LoadBalancerArn: !Ref CruddurALB
+      # MutualAuthentication: 
+      #   MutualAuthentication
+      Port: 443
+      Protocol: HTTPS
+# https://docs.aws.amazon.com/elasticloadbalancing/latest/application/describe-ssl-policies.html
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-Res-PQ-2025-09
+      Tags: 
+        - Key: Environment
+          Value: Production
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-elasticloadbalancingv2-listenerrule.html
+  CruddurBackendRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Priority: 10
+      Actions: 
+        - Type: forward
+      Conditions:
+        - Field: host-header
+          HostHeaderConfig:
+            Values:
+              - api.mustaphaops.online        # HostHeaderConfig: 
+        #   HostHeaderConfig
+        # HttpHeaderConfig: 
+        #   HttpHeaderConfig
+      ListenerArn: !Ref CruddurHttpsListener
+      Tags: 
+        - Key: Environment
+          Value: Production
+      # Transforms: 
+      #   - Transform
+
+
+
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-elasticloadbalancingv2-targetgroup.html
+  CruddurFrontendTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+
+#      HealthCheckEnabled: Boolean  # NOT NEEDED, IF TARGETTYPE IS ALB. IT'S ENABLED BY DEFAULT
+#      HealthCheckIntervalSeconds: Integer # Default is 30s, SO NOT NEEDED
+      HealthCheckPath: /
+#      HealthCheckPort: String # DEFAULT WILL BE SET WITH THE TRAFFIC PORT
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+#      HealthyThresholdCount: 5 # Default is 5 already
+#      IpAddressType: String
+      Matcher: 
+        HttpCode: 200
+      Name: cruddur-frontend-tg
+      Port: 3000
+      Protocol: HTTP
+      ProtocolVersion: HTTP1
+      Tags: 
+        - Key: Environment
+          Value: Production
+#      TargetControlPort: Integer
+      TargetGroupAttributes: 
+        - Key: deregistration_delay.timeout_seconds
+          Value: "30" 
+#      Targets: 
+#        - TargetDescription
+      TargetType: ip
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref CruddurVPC
+
+
+  CruddurBackendTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+#      HealthCheckEnabled: Boolean  # NOT NEEDED, IF TARGETTYPE IS ALB. IT'S ENABLED BY DEFAULT
+#      HealthCheckIntervalSeconds: Integer # Default is 30s, SO NOT NEEDED
+      HealthCheckPath: /api/health-check
+#      HealthCheckPort: String # DEFAULT WILL BE SET WITH THE TRAFFIC PORT
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+#      HealthyThresholdCount: 5 # Default is 5 already
+#      IpAddressType: String
+      Matcher: 
+        HttpCode: 200
+      Name: cruddur-backend-tg
+      Port: 4567
+      Protocol: HTTP
+      ProtocolVersion: HTTP1
+      Tags: 
+        - Key: Environment
+          Value: Production
+#      TargetControlPort: Integer
+      TargetGroupAttributes: 
+        - Key: deregistration_delay.timeout_seconds
+          Value: "30" 
+#      Targets: 
+#        - TargetDescription
+      TargetType: ip
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref CruddurVPC
