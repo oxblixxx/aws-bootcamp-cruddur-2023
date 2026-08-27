@@ -13,7 +13,7 @@ Parameters:
   AcmCertificateArn:
     Type: String
     Description: Availability Zones to use
-    Default: arn:aws:acm:us-east-1:193654356005:certificate/edb389be-6bbd-4536-bc22-d4f17109a16
+    Default: arn:aws:acm:us-east-1:193654356005:certificate/edb389be-6bbd-4536-bc22-d4f17109a160
 
 
 Resources:
@@ -56,6 +56,7 @@ Resources:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-subnet.html
   CruddurPublicSubnet1:
     Type: AWS::EC2::Subnet
+    DependsOn: Crudduripv6CidrBlock
     Properties:
       VpcId: !Ref CruddurVPC
       CidrBlock: 10.10.0.0/20
@@ -71,6 +72,7 @@ Resources:
   
   CruddurPublicSubnet2:
     Type: AWS::EC2::Subnet
+    DependsOn: Crudduripv6CidrBlock
     Properties:
       VpcId: !Ref CruddurVPC
       CidrBlock: 10.10.16.0/20
@@ -86,6 +88,7 @@ Resources:
 
   CruddurPrivateSubnet1:
     Type: AWS::EC2::Subnet
+    DependsOn: Crudduripv6CidrBlock
     Properties:
       VpcId: !Ref CruddurVPC
       CidrBlock: 10.10.32.0/20
@@ -101,6 +104,7 @@ Resources:
 
   CruddurPrivateSubnet2:
     Type: AWS::EC2::Subnet
+    DependsOn: Crudduripv6CidrBlock
     Properties:
       VpcId: !Ref CruddurVPC
       CidrBlock: 10.10.48.0/20
@@ -108,6 +112,7 @@ Resources:
       Ipv6CidrBlock: !Select [3, !Cidr [!Select [0, !GetAtt CruddurVPC.Ipv6CidrBlocks], 256, 64]]
       MapPublicIpOnLaunch: false
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
+
       Tags:
         - Key: Name 
           Value: cruddur-private-subnet-2
@@ -135,6 +140,22 @@ Resources:
           Value: cruddur-private-route-table
         - Key: Environment
           Value: production
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-route.html
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref CruddurPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref CruddurInternetGateway
+
+  PublicIPv6Route:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref CruddurPublicRouteTable
+      DestinationIpv6CidrBlock: ::/0
+      GatewayId: !Ref CruddurInternetGateway
+
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-subnetroutetableassociation.html
   CruddurPublicRouteAssociation1:
@@ -288,13 +309,13 @@ Resources:
     Properties:
       #EnablePrefixForIpv6SourceNat: on
       IpAddressType: dualstack
-      LoadBalancerAttributes:
+#      LoadBalancerAttributes:
       #ListenerAttributes: 
       #   - Key: routing.http.response.server.enabled
       #     Value: "false"
 
-        - Key: routing.http.response.strict_transport_security.header_value
-          Value: "max-age=31536000; includeSubDomains"
+#        - Key: routing.http.response.strict_transport_security.header_value
+#          Value: "max-age=31536000; includeSubDomains"
 
       #   - Key: routing.http.response.x_content_type_options.header_value
       #     Value: nosniff
@@ -449,6 +470,7 @@ Resources:
       Priority: 10
       Actions: 
         - Type: forward
+          TargetGroupArn: !Ref CruddurBackendTG
       Conditions:
         - Field: host-header
           HostHeaderConfig:
