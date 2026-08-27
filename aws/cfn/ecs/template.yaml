@@ -33,7 +33,7 @@ Resources:
     Type: AWS::ECS::Cluster
     Properties:
 
-      ClusterName: !Ref CruddurECSClusterName
+      ClusterName: !Ref CruddurECSCluster
 
       CapacityProviders:
         - FARGATE
@@ -51,8 +51,161 @@ Resources:
         - Key: Environment
           Value: Production
 
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ecs-service.html
+  CruddurFrontend:
+    Type: AWS::ECS::Service
+    Properties:
+      AvailabilityZoneRebalancing: enabled
+#      CapacityProviderStrategy: 
+#        - CapacityProviderStrategyItem
+      Cluster: !Ref CruddurECSCluster
+#      DeploymentConfiguration: 
+#        DeploymentConfiguration
+#      DeploymentController: 
+#        DeploymentController
+      DesiredCount: 1
+      EnableECSManagedTags: true
+      EnableExecuteCommand: true
+#      ForceNewDeployment: 
+#        ForceNewDeployment
+      HealthCheckGracePeriodSeconds: 60
+      LaunchType: FARGATE
+      LoadBalancers: 
+        # - AdvancedConfiguration: 
+        # - AdvancedConfiguration
+        - ContainerName: cruddur-frontend
+        - ContainerPort: 3000
+#        - LoadBalancerName: String
+        - TargetGroupArn: String
+#      Monitoring: 
+#        MonitoringConfiguration
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: true
+          SecurityGroups: 
+            - String
+          Subnets: 
+            - String
+
+
+#      PlacementConstraints: 
+#        - PlacementConstraint
+#      PlacementStrategies: 
+#        - PlacementStrategy
+#      PlatformVersion: String
+      PropagateTags: SERVICE
+#      Role: String
+#      SchedulingStrategy: String
+      ServiceConnectConfiguration: 
+ #       AccessLogConfiguration: 
+ #         ServiceConnectAccessLogConfiguration
+        Enabled: true
+        # LogConfiguration: 
+        #   LogConfiguration
+        Namespace: cruddur
+        Services: 
+          ClientAliases: 
+#            DnsName: String
+            Port: 3000
+#            TestTrafficRules: 
+#              ServiceConnectTestTrafficRules
+          DiscoveryName: cruddur-frontend
+#          IngressPortOverride: Integer
+          PortName: cruddur-frontend
+#          Timeout: 
+#            TimeoutConfiguration
+#          Tls: 
+#            ServiceConnectTlsConfiguration    
+      ServiceName: cruddur-frontend
+      # ServiceRegistries: 
+      #   - ServiceRegistry
+      Tags: 
+        - Key: Environment
+          Value: Production
+      TaskDefinition: cruddur-frontend
+#      VolumeConfigurations: 
+#        - ServiceVolumeConfiguration
+#      VpcLatticeConfigurations: 
+#        - VpcLatticeConfiguration
+
+
+  CruddurBackend:
+    Type: AWS::ECS::Service
+    Properties:
+      AvailabilityZoneRebalancing: enabled
+#      CapacityProviderStrategy: 
+#        - CapacityProviderStrategyItem
+      Cluster: !Ref CruddurECSCluster
+#      DeploymentConfiguration: 
+#        DeploymentConfiguration
+#      DeploymentController: 
+#        DeploymentController
+      DesiredCount: 1
+      EnableECSManagedTags: true
+      EnableExecuteCommand: true
+#      ForceNewDeployment: 
+#        ForceNewDeployment
+      HealthCheckGracePeriodSeconds: 60
+      LaunchType: FARGATE
+      LoadBalancers: 
+        # - AdvancedConfiguration: 
+        # - AdvancedConfiguration
+        - ContainerName: cruddur-backend
+        - ContainerPort: 4567
+#        - LoadBalancerName: String
+        - TargetGroupArn: String
+#      Monitoring: 
+#        MonitoringConfiguration
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: true
+          SecurityGroups: 
+            - String
+          Subnets: 
+            - String
+#      PlacementConstraints: 
+#        - PlacementConstraint
+#      PlacementStrategies: 
+#        - PlacementStrategy
+#      PlatformVersion: String
+      PropagateTags: SERVICE
+#      Role: String
+#      SchedulingStrategy: String
+      ServiceConnectConfiguration: 
+ #       AccessLogConfiguration: 
+ #         ServiceConnectAccessLogConfiguration
+        Enabled: true
+        # LogConfiguration: 
+        #   LogConfiguration
+        Namespace: cruddur
+        Services: 
+          ClientAliases: 
+#            DnsName: String
+            Port: 3000
+#            TestTrafficRules: 
+#              ServiceConnectTestTrafficRules
+          DiscoveryName: cruddur-backend
+#          IngressPortOverride: Integer
+          PortName: cruddur-backend
+#          Timeout: 
+#            TimeoutConfiguration
+#          Tls: 
+#            ServiceConnectTlsConfiguration    
+      ServiceName: cruddur-backend
+      # ServiceRegistries: 
+      #   - ServiceRegistry
+      Tags: 
+        - Key: Environment
+          Value: Production
+      TaskDefinition: cruddur-backend
+#      VolumeConfigurations: 
+#        - ServiceVolumeConfiguration
+#      VpcLatticeConfigurations: 
+#        - VpcLatticeConfiguration
+
 Outputs:
 
   ECSCluster:
     Description: The created cluster.
     Value: !Ref ECSCluster
+
