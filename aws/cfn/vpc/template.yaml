@@ -551,3 +551,85 @@ Resources:
       TargetType: ip
       UnhealthyThresholdCount: 2
       VpcId: !Ref CruddurVPC
+
+
+  # ============================================================
+  # ALB SECURITY GROUP
+  # ============================================================
+
+
+  CruddurRdsSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow PostgreSQL from ECS
+      VpcId: !Ref CruddurVPC
+
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref CruddurEcsSg
+Outputs:
+
+  VpcId:
+    Description: Cruddur VPC ID
+    Value: !Ref CruddurVPC
+    Export:
+      Name: CruddurVPC
+
+  PublicSubnetA:
+    Description: Cruddur Public Subnet A ID
+    Value: !Ref CruddurPublicSubnet1
+    Export:
+      Name: CruddurPublicSubnet1
+
+  PublicSubnetB:
+    Description: Cruddur Public Subnet B ID
+    Value: !Ref CruddurPublicSubnet2
+    Export:
+      Name: CruddurPublicSubnet2
+
+  PrivateSubnetA:
+    Description: Cruddur Private Subnet A ID
+    Value: !Ref CruddurPrivateSubnet1
+    Export:
+      Name: CruddurPrivateSubnet1
+
+  PrivateSubnetB:
+    Description: Cruddur Private Subnet B ID
+    Value: !Ref CruddurPrivateSubnet2
+    Export:
+      Name: CruddurPrivateSubnet2
+
+  # LoadBalancerArn:
+  #   Description: Cruddur ALB ARN
+  #   Value: !GetAtt CruddurALB.LoadBalancerArn
+  #   Export:
+  #     Name: CruddurALB
+
+  BackendTargetGroupArn:
+    Description: Cruddur Backend Target Group ARN
+    Value: !Ref CruddurBackendTG
+    Export:
+      Name: CruddurBackendTG
+
+  FrontendTargetGroupArn:
+    Description: Cruddur Frontend Target Group ARN
+    Value: !Ref CruddurFrontendTG
+    Export:
+      Name: CruddurFrontendTG
+
+  CruddurEcsSg:
+    Description: Cruddur ECS Security Group
+    Value: !Ref CruddurEcsSg
+    Export:
+      Name: CruddurEcsSg
+
+  CruddurRdsSg:
+    Description: Cruddur ECS Security Group
+    Value: !Ref CruddurRdsSg
+    Export:
+      Name: CruddurRdsSg
+
+
+
