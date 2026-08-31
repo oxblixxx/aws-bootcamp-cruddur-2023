@@ -1,0 +1,153 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Description:
+  This is the template for Cruddur Backend task definition
+
+#Parameters:
+
+Resources:
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ecs-taskdefinition.html
+  CruddurBackendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: backend-flask
+#        Command:
+#          - String
+#        Cpu: Integer
+#        CredentialSpecs:
+#          - String
+#        DependsOn:
+#          - ContainerDependency
+#        DisableNetworking: Boolean
+#        DnsSearchDomains:
+#          - String
+#        DnsServers:
+#          - String
+#        DockerLabels:
+#          Key: Value
+#        DockerSecurityOptions:
+#          - String
+#        EntryPoint:
+#          - String
+          Environment:
+            - Name: OTEL_SERVICE_NAME
+              Value: backend-flask
+            - Name: OTEL_EXPORTER_OTLP_ENDPOINT
+              Value: https://api.honeycomb.io
+            - Name: AWS_COGNITO_USER_POOL_ID
+              Value: us-east-1_4RnA4Ed2q
+            - Name: AWS_COGNITO_USER_POOL_CLIENT_ID
+              Value: 6nscku3k5ij847p4drsfis74ge
+            - Name: FRONTEND_URL
+              Value: https://front.cruddur.com
+            - Name: BACKEND_URL
+              Value: https://back.cruddur.com
+            - Name: AWS_DEFAULT_REGION
+              Value: us-east-1
+
+#        EnvironmentFiles:
+#          - EnvironmentFile
+          Essential: true
+#        ExtraHosts:
+#          - HostEntry
+#        FirelensConfiguration:
+#          FirelensConfiguration
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - "python /backend-flask/bin/flask/health-check"
+            Interval: 30
+            Retries: 3
+            StartPeriod: 60
+            Timeout: 5
+#        Hostname: String
+          Image: 193654356005.dkr.ecr.us-east-1.amazonaws.com/backend-flask:latest
+#        Interactive: Boolean
+#        Links:
+#          - String
+#        LinuxParameters:
+#          LinuxParameters
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: cruddur
+              awslogs-region: us-east-1
+              awslogs-stream-prefix: backend-flask
+#          SecretOptions:
+#            - Secret
+
+#        Memory: Integer
+#        MemoryReservation: Integer
+#        MountPoints:
+#          - MountPoint
+          PortMappings:
+#          AppProtocol: String
+            - ContainerPort: 4567
+#          ContainerPortRange: String
+#          HostPort: Integer
+              Name: backend-flask
+              Protocol: tcp
+#        Privileged: Boolean
+#        PseudoTerminal: Boolean
+#        ReadonlyRootFilesystem: Boolean
+#        RepositoryCredentials:
+#          RepositoryCredentials
+#        ResourceRequirements:
+#          - ResourceRequirement
+#        RestartPolicy:
+#          RestartPolicy
+          Secrets:
+            - Name: AWS_ACCESS_KEY_ID
+              ValueFrom: arn:aws:ssm:us-east-1:193654356005:parameter/cruddur/backend-flask/AWS_ACCESS_KEY_ID
+
+            - Name: AWS_SECRET_ACCESS_KEY
+              ValueFrom: arn:aws:ssm:us-east-1:193654356005:parameter/cruddur/backend-flask/AWS_SECRET_ACCESS_KEY
+
+            - Name: CONNECTION_URL
+              ValueFrom: arn:aws:ssm:us-east-1:193654356005:parameter/cruddur/backend-flask/CONNECTION_URL
+
+            - Name: ROLLBAR_ACCESS_TOKEN
+              ValueFrom: arn:aws:ssm:us-east-1:193654356005:parameter/cruddur/backend-flask/ROLLBAR_ACCESS_TOKEN
+
+            - Name: OTEL_EXPORTER_OTLP_HEADERS
+              ValueFrom: arn:aws:ssm:us-east-1:193654356005:parameter/cruddur/backend-flask/OTEL_EXPORTER_OTLP_HEADERS
+
+#        StartTimeout: Integer
+#        StopTimeout: Integer
+#        SystemControls:
+#          - SystemControl
+#        Ulimits:
+#          - Ulimit
+#        User: String
+#        VersionConsistency: String
+#        VolumesFrom:
+#          - VolumeFrom
+#        WorkingDirectory: String
+
+      Cpu: "256"
+#      EnableFaultInjection: Boolean
+#      EphemeralStorage:
+#        EphemeralStorage
+      ExecutionRoleArn: "arn:aws:iam::193654356005:role/CruddurServiceExecutionRole"
+      Family: backend-flask
+#      IpcMode: String
+      Memory: "512"
+      NetworkMode: awsvpc
+#      PidMode: String
+#      PlacementConstraints:
+#        - TaskDefinitionPlacementConstraint
+#      ProxyConfiguration:
+#        ProxyConfiguration
+      RequiresCompatibilities:
+        - FARGATE
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      Tags:
+        - Key: Environment
+          Value: Production
+      TaskRoleArn: "arn:aws:iam::193654356005:role/CruddurTaskRole"
+#      Volumes:
+#        - Volume

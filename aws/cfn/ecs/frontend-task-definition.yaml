@@ -1,0 +1,126 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Description:
+  |
+  This is the template for Cruddur Frontend task definition
+
+#Parameters:
+
+Resources:
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ecs-taskdefinition.html
+  CruddurFrontendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        -
+#        Command:
+#          - String
+#        Cpu: Integer
+#        CredentialSpecs:
+#          - String
+#        DependsOn:
+#          - ContainerDependency
+#        DisableNetworking: Boolean
+#        DnsSearchDomains:
+#          - String
+#        DnsServers:
+#          - String
+#        DockerLabels:
+#          Key: Value
+#        DockerSecurityOptions:
+#          - String
+#        EntryPoint:
+#          - String
+#        Environment:
+#        EnvironmentFiles:
+#          - EnvironmentFile
+          Essential: true
+#        ExtraHosts:
+#          - HostEntry
+#        FirelensConfiguration:
+#          FirelensConfiguration
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - "curl -f http://localhost:3000/health || exit 1"
+            Interval: 30
+            Retries: 3
+            StartPeriod: 60
+            Timeout: 5
+#        Hostname: String
+          Image: 193654356005.dkr.ecr.us-east-1.amazonaws.com/frontend-react:v5
+#        Interactive: Boolean
+#        Links:
+#          - String
+#        LinuxParameters:
+#          LinuxParameters
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-group: cruddur
+              awslogs-region: us-east-1
+              awslogs-stream-prefix: frontend-react
+#          SecretOptions:
+#            - Secret
+
+#        Memory: Integer
+#        MemoryReservation: Integer
+#        MountPoints:
+#          - MountPoint
+          Name: frontend-react
+          PortMappings:
+            -
+#          AppProtocol: String
+              ContainerPort: 3000
+#          ContainerPortRange: String
+#          HostPort: Integer
+              Name: frontend-react
+              Protocol: tcp
+#        Privileged: Boolean
+#        PseudoTerminal: Boolean
+#        ReadonlyRootFilesystem: Boolean
+#        RepositoryCredentials:
+#          RepositoryCredentials
+#        ResourceRequirements:
+#          - ResourceRequirement
+#        RestartPolicy:
+#          RestartPolicy
+#        Secrets:
+#        StartTimeout: Integer
+#        StopTimeout: Integer
+#        SystemControls:
+#          - SystemControl
+#        Ulimits:
+#          - Ulimit
+#        User: String
+#        VersionConsistency: String
+#        VolumesFrom:
+#          - VolumeFrom
+#        WorkingDirectory: String
+
+      Cpu: "256"
+#      EnableFaultInjection: Boolean
+#      EphemeralStorage:
+#        EphemeralStorage
+      ExecutionRoleArn: "arn:aws:iam::193654356005:role/CruddurServiceExecutionRole"
+      Family: frontend-react
+#      IpcMode: String
+      Memory: "512"
+      NetworkMode: "awsvpc"
+#      PidMode: String
+#      PlacementConstraints:
+#        - TaskDefinitionPlacementConstraint
+#      ProxyConfiguration:
+#        ProxyConfiguration
+#      RequiresCompatibilities:
+#        - String
+      RuntimePlatform:
+        CpuArchitecture: "X86_64"
+        OperatingSystemFamily: "LINUX"
+      Tags:
+        - Key: Environment
+          Value: Production
+      TaskRoleArn: "arn:aws:iam::193654356005:role/CruddurTaskRole"
+#      Volumes:
+#        - Volume
