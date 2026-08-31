@@ -1,20 +1,38 @@
 #!/usr/bin/env bash
 
 #set -e
-## CREATE A STACK 
-##  ./create-stack <resource-directory>
+## CREATE A STACK
+## ./create-stack <resource-directory>
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 CFN_DIR="$PROJECT_ROOT/aws/cfn/$1"
 
-CFN_PATH="$CFN_DIR/template.yaml"
+read -p "Enter CloudFormation template filename: " TEMPLATE_FILE
+
+# Automatically append .yaml if it was not provided
+if [[ "$TEMPLATE_FILE" != *.yaml ]]; then
+  TEMPLATE_FILE="${TEMPLATE_FILE}.yaml"
+fi
+
+CFN_PATH="$CFN_DIR/$TEMPLATE_FILE"
 CONFIG_PATH="$CFN_DIR/config.toml"
 REGION="us-east-1"
+
+# Remove .yaml from the filename to create the stack name
+STACK_NAME="${TEMPLATE_FILE%.yaml}"
 
 echo "CFN directory: $CFN_DIR"
 echo "Template: $CFN_PATH"
 echo "Config: $CONFIG_PATH"
+echo "Stack: $STACK_NAME"
+
+# Check that the template exists
+if [[ ! -f "$CFN_PATH" ]]; then
+  echo "ERROR: CloudFormation template not found: $CFN_PATH"
+  exit 1
+fi
 
 cfn-lint "$CFN_PATH"
 
@@ -23,8 +41,6 @@ cfn-lint "$CFN_PATH"
 #STACK_NAME=$(cfn-toml key deploy.stack_name -t "$CONFIG_PATH")
 #  --s3-bucket "$BUCKET" \
 #  --s3-prefix "$1" \
-STACK_NAME="cruddur"
-
 
 aws cloudformation deploy \
   --stack-name "$STACK_NAME" \
@@ -33,3 +49,5 @@ aws cloudformation deploy \
   --no-execute-changeset \
   --tags group="cruddur-$1" \
   --capabilities CAPABILITY_NAMED_IAM
+
+echo "done"
