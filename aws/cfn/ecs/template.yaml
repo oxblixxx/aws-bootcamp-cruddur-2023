@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: The template used to create an ECS Cluster from the ECS Console.
+Description:
+  The template used to create an ECS Cluster from the ECS Console.
 
 Parameters:
 
@@ -9,22 +10,22 @@ Parameters:
     Description: Specifies the ECS Cluster Name with which the resources would be associated
     Default: everlasting-gecko-ub6ome
 
-  SecurityGroupIds:
-    Type: CommaDelimitedList
-    Description: Optional - Specifies the Comma separated list of the Security Group Id of an existing Security Group.
-    Default: ''
+  # SecurityGroupIds:
+  #   Type: CommaDelimitedList
+  #   Description: Optional - Specifies the Comma separated list of the Security Group Id of an existing Security Group.
+  #   Default: ''
 
-  VpcId:
-    Type: String
-    Description: Optional - Specifies the ID of an existing VPC in which to launch your container instances. If you specify a VPC ID, you must specify a list of existing subnets in that VPC. If you do not specify a VPC ID, a new VPC is created with at least 1 subnet.
-    Default: ''
-    AllowedPattern: '^(?:vpc-[0-9a-f]{8,17}|)$'
-    ConstraintDescription: VPC Id must begin with 'vpc-' and have a valid uuid
+  # VpcId:
+  #   Type: String
+  #   Description: Optional - Specifies the ID of an existing VPC in which to launch your container instances. If you specify a VPC ID, you must specify a list of existing subnets in that VPC. If you do not specify a VPC ID, a new VPC is created with at least 1 subnet.
+  #   Default: ''
+  #   AllowedPattern: '^(?:vpc-[0-9a-f]{8,17}|)$'
+  #   ConstraintDescription: VPC Id must begin with 'vpc-' and have a valid uuid
 
-  SubnetIds:
-    Type: CommaDelimitedList
-    Description: Optional - Specifies the Comma separated list of existing VPC Subnet Ids where ECS instances will run
-    Default: ''
+  # SubnetIds:
+  #   Type: CommaDelimitedList
+  #   Description: Optional - Specifies the Comma separated list of existing VPC Subnet Ids where ECS instances will run
+  #   Default: ''
 
 Resources:
 
@@ -33,7 +34,7 @@ Resources:
     Type: AWS::ECS::Cluster
     Properties:
 
-      ClusterName: !Ref CruddurECSCluster
+      ClusterName: !Ref ECSClusterName
 
       CapacityProviders:
         - FARGATE
@@ -55,157 +56,230 @@ Resources:
   CruddurFrontend:
     Type: AWS::ECS::Service
     Properties:
-      AvailabilityZoneRebalancing: enabled
-#      CapacityProviderStrategy: 
+      AvailabilityZoneRebalancing: ENABLED
+#      CapacityProviderStrategy:
 #        - CapacityProviderStrategyItem
       Cluster: !Ref CruddurECSCluster
-#      DeploymentConfiguration: 
+#      DeploymentConfiguration:
 #        DeploymentConfiguration
-#      DeploymentController: 
+#      DeploymentController:
 #        DeploymentController
       DesiredCount: 1
       EnableECSManagedTags: true
       EnableExecuteCommand: true
-#      ForceNewDeployment: 
+#      ForceNewDeployment:
 #        ForceNewDeployment
-      HealthCheckGracePeriodSeconds: 60
+#      HealthCheckGracePeriodSeconds: 60
       LaunchType: FARGATE
-      LoadBalancers: 
-        # - AdvancedConfiguration: 
+      LoadBalancers:
+        # - AdvancedConfiguration:
         # - AdvancedConfiguration
-        - ContainerName: cruddur-frontend
-        - ContainerPort: 3000
+        - ContainerName: frontend-react
+          ContainerPort: 3000
 #        - LoadBalancerName: String
-        - TargetGroupArn: String
-#      Monitoring: 
+          TargetGroupArn: !ImportValue CruddurFrontendTG
+#      Monitoring:
 #        MonitoringConfiguration
-      NetworkConfiguration: 
+      NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: true
-          SecurityGroups: 
-            - String
-          Subnets: 
-            - String
-
-
-#      PlacementConstraints: 
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !ImportValue CruddurEcsSg
+          Subnets:
+            - !ImportValue CruddurPrivateSubnet1
+            - !ImportValue CruddurPrivateSubnet2
+#      PlacementConstraints:
 #        - PlacementConstraint
-#      PlacementStrategies: 
+#      PlacementStrategies:
 #        - PlacementStrategy
 #      PlatformVersion: String
       PropagateTags: SERVICE
 #      Role: String
 #      SchedulingStrategy: String
-      ServiceConnectConfiguration: 
- #       AccessLogConfiguration: 
+      ServiceConnectConfiguration:
+ #       AccessLogConfiguration:
  #         ServiceConnectAccessLogConfiguration
         Enabled: true
-        # LogConfiguration: 
+        # LogConfiguration:
         #   LogConfiguration
         Namespace: cruddur
-        Services: 
-          ClientAliases: 
-#            DnsName: String
-            Port: 3000
-#            TestTrafficRules: 
-#              ServiceConnectTestTrafficRules
-          DiscoveryName: cruddur-frontend
-#          IngressPortOverride: Integer
-          PortName: cruddur-frontend
-#          Timeout: 
-#            TimeoutConfiguration
-#          Tls: 
-#            ServiceConnectTlsConfiguration    
-      ServiceName: cruddur-frontend
-      # ServiceRegistries: 
+        Services:
+          - ClientAliases:
+#             DnsName: String
+              - Port: 3000
+#           TestTrafficRules:
+#             ServiceConnectTestTrafficRules
+            DiscoveryName: frontend-react
+#             IngressPortOverride: Integer
+            PortName: frontend-react
+#           Timeout:
+#           TimeoutConfiguration
+#           Tls:
+#              ServiceConnectTlsConfiguration
+      ServiceName: frontend-react
+      # ServiceRegistries:
       #   - ServiceRegistry
-      Tags: 
+      Tags:
         - Key: Environment
           Value: Production
-      TaskDefinition: cruddur-frontend
-#      VolumeConfigurations: 
+      TaskDefinition: frontend-react
+#      VolumeConfigurations:
 #        - ServiceVolumeConfiguration
-#      VpcLatticeConfigurations: 
+#      VpcLatticeConfigurations:
 #        - VpcLatticeConfiguration
 
 
   CruddurBackend:
     Type: AWS::ECS::Service
     Properties:
-      AvailabilityZoneRebalancing: enabled
-#      CapacityProviderStrategy: 
+      AvailabilityZoneRebalancing: ENABLED
+#      CapacityProviderStrategy:
 #        - CapacityProviderStrategyItem
       Cluster: !Ref CruddurECSCluster
-#      DeploymentConfiguration: 
+#      DeploymentConfiguration:
 #        DeploymentConfiguration
-#      DeploymentController: 
+#      DeploymentController:
 #        DeploymentController
       DesiredCount: 1
       EnableECSManagedTags: true
       EnableExecuteCommand: true
-#      ForceNewDeployment: 
+#      ForceNewDeployment:
 #        ForceNewDeployment
-      HealthCheckGracePeriodSeconds: 60
+#      HealthCheckGracePeriodSeconds: "60"
       LaunchType: FARGATE
-      LoadBalancers: 
-        # - AdvancedConfiguration: 
+      LoadBalancers:
+        # - AdvancedConfiguration:
         # - AdvancedConfiguration
-        - ContainerName: cruddur-backend
-        - ContainerPort: 4567
+        - ContainerName: backend-flask
+          ContainerPort: 4567
 #        - LoadBalancerName: String
-        - TargetGroupArn: String
-#      Monitoring: 
+          TargetGroupArn: !ImportValue CruddurBackendTG
+#      Monitoring:
 #        MonitoringConfiguration
-      NetworkConfiguration: 
+      NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: true
-          SecurityGroups: 
-            - String
-          Subnets: 
-            - String
-#      PlacementConstraints: 
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !ImportValue CruddurEcsSg
+          Subnets:
+            - !ImportValue CruddurPrivateSubnet1
+            - !ImportValue CruddurPrivateSubnet2
+
+#      PlacementConstraints:
 #        - PlacementConstraint
-#      PlacementStrategies: 
+#      PlacementStrategies:
 #        - PlacementStrategy
-#      PlatformVersion: String
       PropagateTags: SERVICE
 #      Role: String
 #      SchedulingStrategy: String
-      ServiceConnectConfiguration: 
- #       AccessLogConfiguration: 
+      ServiceConnectConfiguration:
+ #       AccessLogConfiguration:
  #         ServiceConnectAccessLogConfiguration
         Enabled: true
-        # LogConfiguration: 
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: /ecs/cruddur-backend
+            awslogs-region: !Ref AWS::Region
+            awslogs-stream-prefix: ecs 
+        # LogConfiguration:
         #   LogConfiguration
         Namespace: cruddur
-        Services: 
-          ClientAliases: 
-#            DnsName: String
-            Port: 3000
-#            TestTrafficRules: 
-#              ServiceConnectTestTrafficRules
-          DiscoveryName: cruddur-backend
-#          IngressPortOverride: Integer
-          PortName: cruddur-backend
-#          Timeout: 
-#            TimeoutConfiguration
-#          Tls: 
-#            ServiceConnectTlsConfiguration    
-      ServiceName: cruddur-backend
-      # ServiceRegistries: 
+        Services:
+          - ClientAliases:
+#             DnsName: String
+              - Port: 4567
+#             TestTrafficRules:
+#                ServiceConnectTestTrafficRules
+            DiscoveryName: backend-flask
+#             IngressPortOverride: Integer
+            PortName: backend-flask
+#           Timeout:
+#           TimeoutConfiguration
+#           Tls:
+#             ServiceConnectTlsConfiguration
+      ServiceName: backend-flask
+      # ServiceRegistries:
       #   - ServiceRegistry
-      Tags: 
+      Tags:
         - Key: Environment
           Value: Production
-      TaskDefinition: cruddur-backend
-#      VolumeConfigurations: 
+      TaskDefinition: backend-flask
+#      VolumeConfigurations:
 #        - ServiceVolumeConfiguration
-#      VpcLatticeConfigurations: 
+#      VpcLatticeConfigurations:
 #        - VpcLatticeConfiguration
 
-Outputs:
+  SSMEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !ImportValue CruddurVPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
+      SubnetIds:
+        - !ImportValue CruddurPrivateSubnet1
+        - !ImportValue CruddurPrivateSubnet2
+      SecurityGroupIds:
+        - !Ref VPCEndpointSg
+      PrivateDnsEnabled: true
 
-  ECSCluster:
-    Description: The created cluster.
-    Value: !Ref ECSCluster
+  ECRApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !ImportValue CruddurVPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.api
+      SubnetIds:
+        - !ImportValue CruddurPrivateSubnet1
+        - !ImportValue CruddurPrivateSubnet2
+      SecurityGroupIds:
+        - !Ref VPCEndpointSg
+      PrivateDnsEnabled: true
+  ECRDkrEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !ImportValue CruddurVPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.dkr
+      SubnetIds:
+        - !ImportValue CruddurPrivateSubnet1
+        - !ImportValue CruddurPrivateSubnet2
+      SecurityGroupIds:
+        - !Ref VPCEndpointSg
+      PrivateDnsEnabled: true
 
+  VPCEndpointSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTPS from ECS tasks to VPC endpoints
+      VpcId: !ImportValue CruddurVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !ImportValue CruddurEcsSg
+  CloudWatchLogsEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !ImportValue CruddurVPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
+      SubnetIds:
+        - !ImportValue CruddurPrivateSubnet1
+        - !ImportValue CruddurPrivateSubnet2
+      SecurityGroupIds:
+        - !Ref VPCEndpointSg
+      PrivateDnsEnabled: true
+
+  BackendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/cruddur-backend
+      RetentionInDays: 7
+
+
+# Outputs:
+
+#   ECSCluster:
+#     Description: The created cluster.
+#     Value: !Ref ECSCluster
