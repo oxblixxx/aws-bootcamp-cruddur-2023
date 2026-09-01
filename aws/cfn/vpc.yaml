@@ -1,0 +1,65 @@
+
+{
+    "Vpcs": [
+        {
+            "OwnerId": "193654356005",
+            "InstanceTenancy": "default",
+            "Ipv6CidrBlockAssociationSet": [
+                {
+                    "AssociationId": "vpc-cidr-assoc-09980ff23281fb17f",
+                    "Ipv6CidrBlock": "2600:1f18:1625:d800::/56",
+                    "Ipv6CidrBlockState": {
+                        "State": "associated"
+                    },
+                    "NetworkBorderGroup": "us-east-1",
+                    "Ipv6Pool": "Amazon",
+                    "Ipv6AddressAttribute": "public",
+                    "IpSource": "amazon"
+                }
+            ],
+            "CidrBlockAssociationSet": [
+                {
+                    "AssociationId": "vpc-cidr-assoc-026fa71e1d0ec3c56",
+                    "CidrBlock": "10.10.0.0/16",
+                    "CidrBlockState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+            "IsDefault": false,
+            "Tags": [
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "CruddurVPC"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "cruddur"
+                },
+                {
+                    "Key": "Name",
+                    "Value": "cruddur-vpc"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:193654356005:stack/cruddur/9b494520-a0ae-11f1-8af7-12a9ed6d2a37"
+                },
+                {
+                    "Key": "Environment",
+                    "Value": "production"
+                },
+                {
+                    "Key": "group",
+                    "Value": "cruddur-vpc"
+                }
+            ],
+            "BlockPublicAccessStates": {
+                "InternetGatewayBlockMode": "off"
+            },
+            "VpcId": "vpc-0e5d894b927338c71",
+            "State": "available",
+            "CidrBlock": "10.10.0.0/16",
+            "DhcpOptionsId": "dopt-08e88092c16b12c71"
+        }
+    ]
+}
